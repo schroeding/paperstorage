@@ -26,6 +26,10 @@ def _printTextToDocument(document: canvas, xpos: int, ypos: int, text: str) -> c
 		document.drawString(xpos,  A4[1] - (ypos + (_fontsize + 3) * i), lines[i])
 	return document
 
+def _readDataFromImage():
+	pass
+
+
 def main(argv: list) -> None:
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-o', dest='output', default='backup.pdf', help='filename to write output PDF file to', required=False)
@@ -126,7 +130,7 @@ def main(argv: list) -> None:
 		"   to convert the encoded data blocks into binary data blocks. Concatenate the\n"\
 		"   data blocks in the correct order to restore the original binary file.\n"\
 		"   The integrity of the backup can be verified using the given CRC32 value above.\n\n"\
-		\
+		"\n\n\n\n\n\n"\
 		"3) Manual backup restoration\n\n"\
 		"   On each page, below the QR-Code, the data block is also printed in base32.\n"\
 		"   Every line contains up to 80 characters of base32 encoded data, printed in\n"\
@@ -137,6 +141,10 @@ def main(argv: list) -> None:
 
 
 	document.setFont("Courier-Oblique", _fontsize)
+	document = _printTextToDocument(document, _border, 400, 'for i in *.{jpg,png}; do block=$(zbarimg --raw --quiet $i); if [ "$block" = "" ]; then \\\n'\
+		'echo "image $i not readable!"; continue; fi; echo $block | tail -c +5 | base64 -d > "$(echo $block | \\\n'\
+		'head -c 4 | base64 -d | od --endian big -A n -t u2 -w2 | xargs).hcpbblock"; done; \\\n'\
+		'for i in *.hcpbblock; do cat $i >> restored_backup; rm -f $i; done;')
 	document = _printTextToDocument(document, _border, 560, "import base64, sys, math, binascii\n"
 		"from base64 import b85encode, b32decode\n"
 		"dS, bS, eD = int(input('size of binary data: ')), int(input('block size used for backup: ')), ''\n"
