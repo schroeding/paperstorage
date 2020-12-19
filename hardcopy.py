@@ -3,6 +3,7 @@ import argparse
 import datetime
 import base64
 import binascii
+import hashlib
 import socket # socket is only required to recieve the hostname of the system
 import qrcode
 from qrcode.image import svg
@@ -29,7 +30,6 @@ def _printTextToDocument(document: canvas, xpos: int, ypos: int, text: str) -> c
 def _readDataFromImage():
 	pass
 
-
 def main(argv: list) -> None:
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-o', dest='output', default='backup.pdf', help='filename to write output PDF file to', required=False)
@@ -39,6 +39,9 @@ def main(argv: list) -> None:
 	parser.add_argument('--interactive-restore', dest='interactiverestore', action='store_true', default=False, help='starts an interactive restore of a backup', required=False)
 	parser.add_argument('-b', dest='blocksize', choices=range(512, 2049, 512), type=int, default=2048, help='use a custom block size between 512 bytes and (the default) 2048 bytes', required=False)
 	arguments = parser.parse_args(argv)
+
+	if (arguments.interactiverestore):
+		pass
 
 	data = None
 
@@ -97,23 +100,22 @@ def main(argv: list) -> None:
 	document.setFont("Courier-Bold", _fontsize * 1.2)
 	document.drawCentredString(A4[0] // 2, A4[1] - (50 + (_fontsize * 1.2)), "This document contains a hardcopy paper backup of binary data")
 	document.setFont("Courier", _fontsize * 1.2)
-	document.drawString(_border + 130, A4[1] - (55 + (_fontsize * 1.2 + 2) * 3), "Identifier (e.g. filename): " + id)
-	document.drawString(_border + 130, A4[1] - (55 + (_fontsize * 1.2 + 2) * 4), "Size of binary data:        " + str(len(data)) + " bytes")
-	document.drawString(_border + 130, A4[1] - (55 + (_fontsize * 1.2 + 2) * 5), "Date of backup:             " + str(datetime.date.today()))
-	document.drawString(_border + 130, A4[1] - (55 + (_fontsize * 1.2 + 2) * 6), "Backup created on:          " + socket.gethostname())
-
-	document.drawString(_border + 130, A4[1] - (55 + (_fontsize * 1.2 + 2) * 8), "Block size used for backup: " + str(blockSize) + " bytes")
-	document.drawString(_border + 130, A4[1] - (55 + (_fontsize * 1.2 + 2) * 9), "Amount of blocks used:      " + str(requiredBlocks))
-	document.drawString(_border + 130, A4[1] - (55 + (_fontsize * 1.2 + 2) * 10), "CRC32 of restored data:     " + hex(binascii.crc32(data)))
+	document = _printTextToDocument(document, _border + 130, 90, f"Identifier (e.g. filename): { id }\n" \
+		f"Size of binary data:        { len(data) } bytes\n" \
+		f"Date of backup:             { datetime.date.today() }\n" \
+		f"Backup created on:          { socket.gethostname() }\n\n" \
+		f"Block size used for backup: { str(blockSize) } bytes\n" \
+		f"Amount of blocks used:      { str(requiredBlocks) }\n" \
+		f"CRC32 of restored data:     { hex(binascii.crc32(data)) }")
 	
-	qr = qrcode.QRCode(error_correction=qrcode.ERROR_CORRECT_Q, border=0, box_size=32)
+	qr = qrcode.QRCode(error_correction=qrcode.ERROR_CORRECT_Q, border=0, box_size=12)
 	qr.add_data("hcpb01," + base64.b64encode(bytes(id, 'utf-8')).decode('ascii') + "," + str(len(data)) + "," + str(blockSize)) # TODO: Auslagern, alles spaghetticode hier
 	qr.make(True);
 
 	qrAsImage = ImageReader(qr.make_image().get_image())
 	document.drawImage(qrAsImage,
 		_border + 15,
-		A4[1] - 175,
+		A4[1] - 174,
 		100,
 		100)
 		
@@ -121,7 +123,7 @@ def main(argv: list) -> None:
 	document = _printTextToDocument(document, _border, 230, "1) Read the QR-Codes with Hardcopy Paper Backup\n\n"\
 		"   Scan all pages (including this one) with any kind of scanner available to\n"\
 		"   you and save the scans as images on your computer. Use 'python -m hardcopy'\n"\
-		"   with the '-interactive-restore' argument and follow the instructions to to start the restore process.\n\n"\
+		"   with the '-interactive-restore' argument.\n\n"\
 		\
 		"2) Read the QR-Codes manually\n\n"\
 		"   Scan all pages (except this one) with any kind of scanner available to you\n"\
@@ -203,18 +205,18 @@ def main(argv: list) -> None:
 		qr = None
 
 		try: # oh god why
-			qr = qrcode.QRCode(error_correction=qrcode.ERROR_CORRECT_Q, border=0, box_size=32)
+			qr = qrcode.QRCode(error_correction=qrcode.ERROR_CORRECT_Q, border=0, box_size=1)
 			qr.add_data(b64EncodedDataBlock)
 			qr.make(True);
 			print("\t\t... using Error Correction Level Q (25% recoverable)")
 		except (qrcode.exceptions.DataOverflowError):
 			try: # oh go why²
-				qr = qrcode.QRCode(error_correction=qrcode.ERROR_CORRECT_M, border=0, box_size=32)
+				qr = qrcode.QRCode(error_correction=qrcode.ERROR_CORRECT_M, border=0, box_size=1)
 				qr.add_data(b64EncodedDataBlock)
 				qr.make(True);
 				print("\t\t... using Error Correction Level M (15% recoverable)")
 			except (qrcode.exceptions.DataOverflowError):
-				qr = qrcode.QRCode(error_correction=qrcode.ERROR_CORRECT_L, border=0, box_size=32)
+				qr = qrcode.QRCode(error_correction=qrcode.ERROR_CORRECT_L, border=0, box_size=1)
 				qr.add_data(b64EncodedDataBlock)
 				qr.make(True);
 				print("\t\t... using Error Correction Level L (7% recoverable)")
