@@ -57,22 +57,22 @@ class PaperStorage:
 				sets the font to use in the pdf, defaults to Courier (built-in),
 				must be a monospace font (no exception will be raised otherwise, but the layout will look horrible)
 		"""
-		if (not ((type(data) == bytes) or (data is None))):
+		if (not (isinstance(data, bytes) or (data is None))):
 			if (type(data) == str): raise TypeError('data must be bytes object or None - use classmethod fromStr to handle str')
 			else: raise TypeError('data must be bytes object or None - check classmethods for other data types')
 		self._rawData = data
 
-		if (not ((type(identifier) == str) or (identifier is None))):
+		if (not (isinstance(identifier, str) or (identifier is None))):
 			raise TypeError('identifier must be str or None')
 		self._identifier = identifier
 
-		if (type(blockSize) != int):
+		if (not isinstance(blockSize, int)):
 			raise TypeError('blockSize must be int')
 		if (not (blockSize in range(50, 1501))):
 			raise ValueError('blockSize must be between 50 and 1500')
 		self._blockSize = blockSize
 
-		if ((type(size) != type((int, int))) or (type(size[0]) != int) or (type(size[1]) != int)):
+		if ((not isinstance(size, type((int, int)))) or (not isinstance(size[0], int)) or (not isinstance(size[1], int))):
 			raise TypeError('size must be int tupel, e.g. (210, 297)')
 		if ((size[0] <= 0) or (size[1] <= 0)):
 			raise ValueError('height and width must be greater than zero')
@@ -81,20 +81,20 @@ class PaperStorage:
 		self._width = size[0]
 		self._height = size[1]
 
-		if (type(writeHostname) != bool):
+		if (not isinstance(writeHostname, bool)):
 			raise TypeError('writeHostname must be bool')
 		self._writeHostname = writeHostname
 
-		if (type(writeDate) != bool):
+		if (not isinstance(writeDate, bool)):
 			raise TypeError('writeDate must be bool')
 		self._writeDate = writeDate
 		self._date = str(datetime.date.today())
 
-		if (not ((type(watermark) == str) or (watermark is None))):
+		if (not (isinstance(watermark, bool) or (watermark is None))):
 			raise TypeError('watermark must be str or None')
 		self._watermark = watermark
 
-		if (not ((type(fontname) == str))):
+		if (not isinstance(fontname, str)):
 			raise TypeError('fontname must be str')
 		self._font = fontname
 
@@ -125,7 +125,7 @@ class PaperStorage:
 		writeDate: bool = True,
 		watermark: str = None,
 		fontname: str = 'Courier'):
-		if ((type(data) != str) or (type(encoding) != str)): raise TypeError('expected str')
+		if ((not isinstance(data, str)) or (not isinstance(encoding, str))): raise TypeError('expected str')
 
 		_strToBytes = bytes(data, encoding)
 		return cls(_strToBytes, identifier=identifier, blockSize=blockSize, size=size, writeHostname=writeHostname, writeDate=writeDate, watermark=watermark, fontname=fontname)
@@ -135,15 +135,15 @@ class PaperStorage:
 	def fromFile(cls,
 		filename: str,
 		size: (int, int) = A4):
-		if (type(filename) != str): raise TypeError('expected str')
+		if (not isinstance(filename, str)): raise TypeError('expected str')
 
 		raise NotImplementedError() # TODO: implement from file
 		pass
 
 
-	def __renderQRCode(self, data: str, wPos: int, hPos: int, size: int) -> None:
+	def __renderQRCode(self, data: str, wPos: int, hPos: int, size: int, force31: bool = False) -> None:
 		_qrCode = None
-		if (len(data) >= 262):
+		if ((len(data) >= 262) or force31):
 			if (len(data) >= 1499):
 				_qrCode = qrcode.QRCode(version=31, error_correction=qrcode.ERROR_CORRECT_M, border=0, box_size=16)
 			else:
@@ -283,7 +283,7 @@ class PaperStorage:
 														# page id and the start of the base64 encoded data block
 														# TODO: replace with nicer check & error message, even though this should *never* fail
 			_qrSize = min((self._width * mm) - (2 * self._border), (self._height * mm) - (40 * self._fontsize * 1.15))
-			self.__renderQRCode(_qrData.decode("ascii"), self._border + (((self._width * mm) - ((2 * self._border) + _qrSize)) / 2), 5 * self._fontsize, _qrSize)
+			self.__renderQRCode(_qrData.decode("ascii"), self._border + (((self._width * mm) - ((2 * self._border) + _qrSize)) / 2), 5 * self._fontsize, _qrSize, True)
 			_b32DataBlock = b32encode(_rawDataBlock)
 			_amountOfLines = math.ceil(len(_b32DataBlock) / 80)
 			for k in range(_amountOfLines):
@@ -310,7 +310,7 @@ class PaperStorage:
 
 		Returns False if generation failed or if the file could not be saved, True otherwise
 		"""
-		if ((type(filename) != str) or (len(filename) == 0)):
+		if ((not isinstance(filename, str)) or (len(filename) == 0)):
 			raise TypeError('filename must be non-empty str') # Should be ValueError for ''
 
 		if (not self.__renderPDF()):
