@@ -7,10 +7,8 @@ import qrcode
 from base64 import b64decode, b64encode, b32encode, b32decode, b85encode
 from socket import gethostname
 from random import random
-import reportlab
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase.pdfmetrics import stringWidth
-from reportlab.lib.utils import ImageReader
 from reportlab.lib.units import mm
 
 class PaperStorage:
@@ -58,7 +56,7 @@ class PaperStorage:
 				must be a monospace font (no exception will be raised otherwise, but the layout will look horrible)
 		"""
 		if (not (isinstance(data, bytes) or (data is None))):
-			if (type(data) == str): raise TypeError('data must be bytes object or None - use classmethod fromStr to handle str')
+			if (isinstance(data, str)): raise TypeError('data must be bytes object or None - use classmethod fromStr to handle str')
 			else: raise TypeError('data must be bytes object or None - check classmethods for other data types')
 		self._rawData = data
 
@@ -136,9 +134,7 @@ class PaperStorage:
 		filename: str,
 		size: (int, int) = A4):
 		if (not isinstance(filename, str)): raise TypeError('expected str')
-
 		raise NotImplementedError() # TODO: implement from file
-		pass
 
 
 	def __renderQRCode(self, data: str, wPos: int, hPos: int, size: int, force31: bool = False) -> None:
@@ -318,7 +314,7 @@ class PaperStorage:
 		assert(self._document != None)
 		try:
 			_file = open(filename, "wb")
-		except:
+		except (Exception):
 			return False
 		_file.write(self._binaryDocument.getvalue())
 		_file.close()
