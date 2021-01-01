@@ -1,0 +1,5 @@
+__pycache__
+paperstorage/__pycache__
+tests/__pycache__
+test*.pdf
+old
