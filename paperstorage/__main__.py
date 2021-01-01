@@ -2,6 +2,9 @@ import argparse
 import sys
 
 def main(argv) -> None:
+	"""
+	Main method to start paperstorage in interactive mode / from the console
+	"""
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-o', dest='output', default='backup.pdf', help='filename to write output PDF file to', required=False)
 	parser.add_argument('-f', dest='file', help='TODO TODO TODO read the specified file, otherwise stdin', required=False)
