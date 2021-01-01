@@ -1,4 +1,4 @@
-# Hardcopy Paper Backup
+# Paper Storage
 
 Create paper backups for arbitrary data that are recoverable by simple means.
 
@@ -9,7 +9,7 @@ TODO
 
 TODO
 ```bash
-python -m hardcopy
+python -m paperstorage
 ```
 
 ## License
