@@ -1,4 +1,7 @@
 import io
+import math
+import datetime
+from socket import gethostname
 import reportlab
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.pdfbase.pdfmetrics import stringWidth
@@ -11,8 +14,10 @@ class PaperStorage:
 	LETTER = (216, 279) # ... except north america. why are you like this. :-(
 
 	_border = 20 * mm
-	_fontsize = 12
-	_font = "Courier"
+	_fontsize = None
+	_font = None
+	
+	_softwareIdentifier = "Paperstorage Backup"
 
 	def __init__(self,
 		data: bytes = None,
@@ -21,7 +26,8 @@ class PaperStorage:
 		size: (int, int) = A4,
 		writeHostname: bool = True,
 		writeDate: bool = True,
-		watermark: str = None):
+		watermark: str = None,
+		fontname: str = 'Courier'):
 		"""
 		Creates a new PaperStorage object
 
@@ -42,8 +48,10 @@ class PaperStorage:
 				prints the current date onto the document, defaults to True
 			watermark (str or None):
 				embed a string as a watermark on every page, defaults to None
+			fontname (str):
+				sets the font to use in the pdf, defaults to Courier (built-in),
+				must be a monospace font (no exception will be raised otherwise, but the layout will look horrible)
 		"""
-
 		if (not ((type(data) == bytes) or (data is None))):
 			if (type(data) == str): raise TypeError('data must be bytes object or None - use classmethod fromStr to handle str')
 			else: raise TypeError('data must be bytes object or None - check classmethods for other data types')
@@ -75,15 +83,31 @@ class PaperStorage:
 		if (type(writeDate) != bool):
 			raise TypeError('writeDate must be bool')
 		self._writeDate = writeDate
+		self._date = str(datetime.date.today())
 
 		if (not ((type(watermark) == str) or (watermark is None))):
 			raise TypeError('watermark must be str or None')
 		self._watermark = watermark
 
-		# END OF TYPECHECKS
+		if (not ((type(fontname) == str))):
+			raise TypeError('fontname must be str')
+		self._font = fontname
 
 		self._document = None
 		self._binaryDocument = io.BytesIO()
+		_maxFontsizeHeight = round(((self._height * mm) / 70), 1) # We must be able to print 70 lines of text ...
+		_maxFontsizeWidth = None # ... and at least a full base32 line with 10 blocks a 8 characters + checksum and line number
+		_base32MockUp = "xx 12345678 12345678 12345678 12345678 12345678 12345678 12345678 12345678 12345678 12345678 xxxx"
+		for n in range(round(_maxFontsizeHeight * 10), 1, -1): # range can only use integers, so we multiply by 10, e.g. 2.5 => 25
+			try: # stringWidth will throw an exception if the typeface does not exist
+				if (stringWidth(_base32MockUp, self._font, (n / 10)) < ((self._width * mm) - (2 * self._border))):
+					_maxFontsizeWidth = (n / 10) # we must divide by 10 to get the original float value
+					break
+			except (KeyError):
+				raise ValueError('invalid fontname specified / font not found')
+		if (_maxFontsizeWidth is None): raise ValueError('invalid document dimensions (too small width)')
+		self._fontsize = min(_maxFontsizeWidth, _maxFontsizeHeight)
+		
 
 	@classmethod
 	def fromStr(cls,
@@ -94,28 +118,37 @@ class PaperStorage:
 		size: (int, int) = A4,
 		writeHostname: bool = True,
 		writeDate: bool = True,
-		watermark: str = None):
-
+		watermark: str = None,
+		fontname: str = 'Courier'):
 		if ((type(data) != str) or (type(encoding) != str)): raise TypeError('expected str')
 
 		_strToBytes = bytes(data, encoding)
-		return cls(_strToBytes, identifier=identifier, blockSize=blockSize, size=size, writeHostname=writeHostname, writeDate=writeDate, watermark=watermark)
+		return cls(_strToBytes, identifier=identifier, blockSize=blockSize, size=size, writeHostname=writeHostname, writeDate=writeDate, watermark=watermark, fontname=fontname)
 
 
 	@classmethod
 	def fromFile(cls,
 		filename: str,
 		size: (int, int) = A4):
-
 		if (type(filename) != str): raise TypeError('expected str')
 
 		raise NotImplementedError() # TODO: implement from file
 		pass
-	
 
 	def __newPage(self, notFirstPage: bool = True) -> None:
-		if (!notFirstPage): self._document.showPage()
-		self.__renderLine(4 * _fontsize)
+		if (notFirstPage): self._document.showPage() # page break
+		self.__renderLine(4 * self._fontsize)
+		self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(len(self._rawData) / self._blockSize) + 1}', 2 * self._fontsize, alignRight=True);
+		self.__renderText(self._softwareIdentifier, 2 * self._fontsize)
+
+		self.__renderLine((self._height * mm) - (4 * self._fontsize))
+		self.__renderText(self._identifier, (self._height * mm) - (3.5 * self._fontsize))
+		if (self._writeDate):
+			self.__renderText(f'Created on {self._date}', (self._height * mm) - (3.5 * self._fontsize), alignRight=True)
+		elif (self._writeHostname):
+			self.__renderText(gethostname(), (self._height * mm) - (3.5 * self._fontsize), alignRight=True)
+		else:
+			self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(len(self._rawData) / self._blockSize) + 1}',  (self._height * mm) - (3.5 * self._fontsize), alignRight=True);
 
 
 	def __renderText(self, text: str,
@@ -123,7 +156,7 @@ class PaperStorage:
 		wPos: int = _border,
 		maxWidth: int = None,
 		bold: bool = False,
-		fontsize: int = _fontsize,
+		fontsize: int = None,
 		alignRight: bool = False,
 		alignCenter: bool = False) -> int:
 		"""
@@ -131,6 +164,8 @@ class PaperStorage:
 
 		Returns the height of the newly added text
 		"""
+		if (fontsize == None):
+			fontsize = self._fontsize
 		if (bold):
 			self._document.setFont(f'{self._font}-Bold', fontsize)
 		else:
@@ -142,7 +177,7 @@ class PaperStorage:
 			wPos = (self._width * mm) / 2
 		elif (alignRight):
 			_drawString = self._document.drawRightString
-			wPos = (self._width * mm) - wPos
+			wPos = (self._width * mm) - wPos + stringWidth(' ', self._font, fontsize)
 		else:
 			_drawString = self._document.drawString
 		_textHeight = 1
@@ -184,6 +219,8 @@ class PaperStorage:
 		self._document = Canvas(filename=self._binaryDocument, pagesize=(self._width * mm, self._height * mm))
 		
 		self._document.setTitle(f'Paper Backup - {self._identifier}')
+		self.__newPage(False)
+		self.__newPage()
 		self.__newPage()
 		self._document.save()
 		return True
@@ -212,3 +249,14 @@ class PaperStorage:
 		_file.write(self._binaryDocument.getvalue())
 		_file.close()
 		return True
+
+	def getPDF(self) -> bytes:
+		"""
+		Fetches the generated PDF document as a bytes object
+		
+		Returns None if generation failed, a bytes object otherwise
+		"""
+		if (not self.__renderPDF()):
+			return None
+		assert(self._document != None)
+		return self._binaryDocument.getvalue()
