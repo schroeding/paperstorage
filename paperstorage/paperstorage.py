@@ -60,40 +60,31 @@ class PaperStorage:
 			else: raise TypeError('data must be bytes object or None - check classmethods for other data types')
 		self._rawData = data
 
-		if (not (isinstance(identifier, str) or (identifier is None))):
-			raise TypeError('identifier must be str or None')
+		if (not (isinstance(identifier, str) or (identifier is None))): raise TypeError('identifier must be str or None')
 		self._identifier = identifier
 
-		if (not isinstance(blockSize, int)):
-			raise TypeError('blockSize must be int')
-		if (not (blockSize in range(50, 1501))):
-			raise ValueError('blockSize must be between 50 and 1500')
+		if (not isinstance(blockSize, int)): raise TypeError('blockSize must be int')
+		if (not (blockSize in range(50, 1501))): raise ValueError('blockSize must be between 50 and 1500')
 		self._blockSize = blockSize
 
 		if ((not isinstance(size, type((int, int)))) or (not isinstance(size[0], int)) or (not isinstance(size[1], int))):
 			raise TypeError('size must be int tupel, e.g. (210, 297)')
-		if ((size[0] <= 0) or (size[1] <= 0)):
-			raise ValueError('height and width must be greater than zero')
-		if (size[0] > size[1]):
-			raise ValueError('landscape format is not supported')
+		if ((size[0] <= 0) or (size[1] <= 0)): raise ValueError('height and width must be greater than zero')
+		if (size[0] > size[1]): raise ValueError('landscape format is not supported')
 		self._width = size[0]
 		self._height = size[1]
 
-		if (not isinstance(writeHostname, bool)):
-			raise TypeError('writeHostname must be bool')
+		if (not isinstance(writeHostname, bool)): raise TypeError('writeHostname must be bool')
 		self._writeHostname = writeHostname
 
-		if (not isinstance(writeDate, bool)):
-			raise TypeError('writeDate must be bool')
+		if (not isinstance(writeDate, bool)): raise TypeError('writeDate must be bool')
 		self._writeDate = writeDate
 		self._date = str(datetime.date.today())
 
-		if (not (isinstance(watermark, bool) or (watermark is None))):
-			raise TypeError('watermark must be str or None')
+		if (not (isinstance(watermark, bool) or (watermark is None))): raise TypeError('watermark must be str or None')
 		self._watermark = watermark
 
-		if (not isinstance(fontname, str)):
-			raise TypeError('fontname must be str')
+		if (not isinstance(fontname, str)): raise TypeError('fontname must be str')
 		self._font = fontname
 
 		self._document = None
