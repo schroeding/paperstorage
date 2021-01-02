@@ -4,7 +4,7 @@ import datetime
 import binascii
 import hashlib
 import qrcode
-from base64 import b64encode, b32encode, b32decode, b85encode
+from base64 import b64encode, b64decode, b32encode, b32decode, b85encode
 from socket import gethostname
 from random import random
 from reportlab.pdfgen.canvas import Canvas
@@ -59,10 +59,14 @@ class PaperStorage:
 			noMetaPage (bool):
 				no first page (with meta information and restore instructions) is printed
 		"""
-		if (not (isinstance(data, bytes) or (data is None))):
+		self._documentID = None
+		if (not (isinstance(data, bytes) or (data == None))):
 			if (isinstance(data, str)): raise TypeError('data must be bytes object or None - use classmethod fromStr to handle str')
 			else: raise TypeError('data must be bytes object or None - check classmethods for other data types')
+		elif (data != None):
+			self._documentID = b64encode(round((random()*65535)).to_bytes(2, byteorder='big'))
 		self._rawData = data
+		self._dataSize = 0 if (self._rawData == None) else len(self._rawData)
 
 		if (not (isinstance(identifier, str) or (identifier is None))): raise TypeError('identifier must be str or None')
 		self._identifier = identifier
@@ -94,6 +98,9 @@ class PaperStorage:
 		if (not isinstance(noMetaPage, bool)): raise TypeError('noMetaPage must be bool')
 		self._noMetaPage = noMetaPage
 
+		self._blocks = dict()
+		self._amountOfBlocks = 0
+		self._sha256 = None
 		self._document = None
 		self._binaryDocument = io.BytesIO()
 		_maxFontsizeHeight = round(((self._height * mm) / 70), 1) # We must be able to print 70 lines of text ...
@@ -143,6 +150,82 @@ class PaperStorage:
 		raise NotImplementedError() # TODO: implement from file
 
 
+	def restoreMetaData(self, identifier: str, size: int, documentID: str = None, blockSize: int = 1500, sha256Hash: str = None) -> bool:
+		"""
+		Sets the meta data, typically to start the restore process of a backup
+
+		Parameters:
+			identifier (str):
+				the identifier of the file that should be restored
+			size (int):
+				the size of the file in bytes
+			documentID (str or None):
+				the four character, base64 encoded document id or None to disable document id checks
+				if no document id is specified, it's possible that two backups are mixed together
+			blockSize (int)
+				the block size used in the backup, can also be calculated with (number of base32 lines * 50), defaults to 1500
+			sha256Hash (str or None)
+				the sha256 hash of the file or None to disable any integrity check
+
+		Returns False if any binary data is already loaded, True otherwise
+		"""
+		if (not isinstance(size, int)): raise TypeError('size must be int')
+		if (not isinstance(blockSize, int)): raise TypeError('blockSize must be int')
+		if (not (blockSize in range(50, 1501, 50))): raise ValueError('blocksize invalid, must be any multiple of 50 between 50 and 1500')
+		if (self._rawData != None): return False
+
+		self._identifier = identifier
+		self._dataSize = size
+		self._documentID = documentID
+		self._blockSize = blockSize
+		self._amountOfBlocks = math.ceil(self._dataSize / self._blockSize)
+		self._sha256 = sha256Hash
+
+
+	def restoreDataBlock(self, blockID: int, blockData: bytes, documentID: str = None):
+		"""
+		Sets a data block, typically during the restore process of a backup
+
+		Partameters:
+			blockID (int):
+				block id of the block
+			blockData (bytes):
+				binary data of the data block
+			documentID (str or None):
+				the four character, base64 encoded document id or None to disable document id checks
+				if no document id is specified, it's possible that two backups are mixed together
+
+		Returns False is the block is already loaded or the document id is invalid, True otherwise
+		"""
+		if (not isinstance(blockID, int)): raise TypeError('blockID must be int')
+		if (not isinstance(blockData, bytes)): raise TypeError('blockData must be bytes')
+		if (self._rawData != None): return False
+		if (self._blocks.get(blockID, None) != None): return False
+		if ((self._documentID != None) and (documentID != None) and (self._documentID != documentID)): return False
+		if (self._amountOfBlocks < (blockID + 1)): self._amountOfBlocks = blockID + 1
+		if (len(blockData) > self._blockSize): self._blockSize = len(blockData)
+		self._blocks[blockID] = blockData
+		
+
+	def restoreFromQRString(self, qrData: str) -> bool:
+		"""
+		Restores meta data or a data block from a QR data string
+
+		Parameters:
+			qrData (str):
+				a string from a QR code, as-is without any modifications
+
+		Returns False if the string is invalid, True otherwise
+		"""
+		if (qrData[:6] == 'hcpb01'):
+			qrDataChunks = qrData.split(',')
+			if (len(qrDataChunks) != 6):
+				return False
+			return self.restoreMetaData(b64decode(qrDataChunks[2].encode('ascii')).decode('utf-8'), int(qrDataChunks[3]), qrDataChunks[1], int(qrDataChunks[4]), qrDataChunks[5])
+		elif ((len(qrData) > 8) and (qrData[3] == '=') and (qrData[7] == '=')):
+			return self.restoreDataBlock(int.from_bytes(b64decode(qrData[0:4]), byteorder='big', signed=False), b64decode(qrData[8:]), str(qrData[4:8]))
+		return False
+
 	def __renderQRCode(self, data: str, wPos: int, hPos: int, size: int, force31: bool = False) -> None:
 		_qrCode = None
 		if ((len(data) >= 262) or force31):
@@ -157,6 +240,7 @@ class PaperStorage:
 		assert(_qrCode != None)
 		self._document.drawInlineImage(_qrCode.make_image().get_image(), wPos, (self._height * mm) - hPos - size, size, size)
 
+
 	def __newPage(self, notFirstPage: bool = True) -> None:
 		if (notFirstPage): self._document.showPage() # page break
 		if (self._watermark != None):
@@ -169,7 +253,7 @@ class PaperStorage:
 			self._document.drawCentredString((self._width * mm) / 2, (self._height * mm) / 2, self._watermark)
 			self._document.restoreState()
 		self.__renderLine(4 * self._fontsize)
-		self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(len(self._rawData) / self._blockSize) + 1}', 2.5 * self._fontsize, alignRight=True);
+		self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(self._dataSize / self._blockSize) + (0 if self._noMetaPage else 1)}', 2.5 * self._fontsize, alignRight=True);
 		self.__renderText(self._softwareIdentifier, 2.5 * self._fontsize)
 
 		self.__renderLine((self._height * mm) - (4 * self._fontsize))
@@ -179,7 +263,7 @@ class PaperStorage:
 		elif (self._writeHostname):
 			self.__renderText(gethostname(), (self._height * mm) - (4 * self._fontsize), alignRight=True)
 		else:
-			self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(len(self._rawData) / self._blockSize) + 1}',  (self._height * mm) - (4 * self._fontsize), alignRight=True);
+			self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(self._dataSize / self._blockSize) + (0 if self._noMetaPage else 1)}',  (self._height * mm) - (4 * self._fontsize), alignRight=True);
 
 
 	def __renderText(self, text: str,
@@ -248,45 +332,44 @@ class PaperStorage:
 		Returns False if generation failed, True otherwise
 		"""
 		if (self._rawData is None): return False
-		if (self._identifier is None): self._identifier = f'Backup of {len(self._rawData)} byte file'
+		if (self._identifier is None): self._identifier = f'Backup of {self._dataSize} byte file'
 		self._document = Canvas(filename=self._binaryDocument, pagesize=(self._width * mm, self._height * mm))
 
-		_amountOfBlocks = math.ceil(len(self._rawData) / self._blockSize) # + 1 = first page with meta information
+		self._amountOfBlocks = math.ceil(self._dataSize / self._blockSize)
 		_crc32 = hex(binascii.crc32(self._rawData))
 		_md5 = hashlib.md5(self._rawData).hexdigest()
 		_sha256 = hashlib.sha256(self._rawData).hexdigest()
-		_documentID = b64encode(round((random()*65535)).to_bytes(2, byteorder='big'))
-
+		
 		self._document.setTitle(f'{self._softwareIdentifier} - {self._identifier}')
-		self.__newPage(False)
 		# first page with meta info
-		self.__renderText(f'This document contains a paper backup of {self._backupType}', 5 * self._fontsize, fontsize=(self._fontsize * 1.3),
-			bold=True, alignCenter=True)
-		_hPos = 8 * self._fontsize
-		_hPos += self.__renderText(f'Identifier:           {self._identifier}\n'\
-			f'Size of binary data:  {len(self._rawData)} bytes\n'\
-			f'{f"Date of backup:       {self._date}" if self._writeDate else ""}\n'\
-			f'{f"Backup created on:    {gethostname()}" if self._writeHostname else ""}\n'\
-			f'\n'\
-			f'Block size of backup: {self._blockSize} bytes\n'\
-			f'Blocks used:          {_amountOfBlocks}\n'\
-			f'CRC32 checksum:       {_crc32}\n'\
-			f'MD5 hash:             {_md5}\n', _hPos, self._border + (0.24 * self._width * mm), fontsize=(self._fontsize * 1.2), maxWidth=(0.6 * self._width * mm))
-
-		_metadata = f'hcpb01,{_documentID.decode("ascii")},{b64encode((self._identifier).encode("utf-8")).decode("ascii")},{str(len(self._rawData))},{str(self._blockSize)},{_sha256}'
-		self.__renderQRCode(_metadata, self._border + (0.02 * self._width * mm), 8 * self._fontsize, (0.20 * self._width * mm) - self._fontsize)
-
 		if (not self._noMetaPage):
+			self.__newPage(False)
+			self.__renderText(f'This document contains a paper backup of {self._backupType}', 5 * self._fontsize, fontsize=(self._fontsize * 1.3),
+				bold=True, alignCenter=True)
+			_hPos = 8 * self._fontsize
+			_hPos += self.__renderText(f'Identifier:           {self._identifier}\n'\
+				f'Size of binary data:  {len(self._rawData)} bytes\n'\
+				f'{f"Date of backup:       {self._date}" if self._writeDate else ""}\n'\
+				f'{f"Backup created on:    {gethostname()}" if self._writeHostname else ""}\n'\
+				f'\n'\
+				f'Block size of backup: {self._blockSize} bytes\n'\
+				f'Blocks used:          {self._amountOfBlocks}\n'\
+				f'CRC32 checksum:       {_crc32}\n'\
+				f'MD5 hash:             {_md5}\n', _hPos, self._border + (0.24 * self._width * mm), fontsize=(self._fontsize * 1.2), maxWidth=(0.6 * self._width * mm))
+
+			_metadata = f'hcpb01,{self._documentID.decode("ascii")},{b64encode((self._identifier).encode("utf-8")).decode("ascii")},{str(len(self._rawData))},{str(self._blockSize)},{_sha256}'
+			self.__renderQRCode(_metadata, self._border + (0.02 * self._width * mm), 8 * self._fontsize, (0.20 * self._width * mm) - self._fontsize)
+
 			if (self._customFirstPage != ''):
 				self.__renderText(self._customFirstPage, _hPos, fontsize=(self._fontsize * 1.1))
 			else:
 				_offset = stringWidth('   ', self._font, self._fontsize)
 				_hPos += self.__renderText('To restore this backup, follow one of the following restore methods:', _hPos + (self._fontsize * 0.3), fontsize=(self._fontsize * 1.2), alignCenter=True)
 				_hPos += self.__renderText('1) Read the QR-Codes with PaperStorage', _hPos, fontsize=(self._fontsize * 1))
-				_hPos += self.__renderText('Scan all pages (including this one) with any kind of scanner / scanning app available to you and save the resulting scans as images on your computer. Install python and the PaperStorage (available on pip, \'python -m pip install paperstorage\') module on your computer and start the restore by typing \'python -m paperstorage --interactive-restore\' in a terminal.',
+				_hPos += self.__renderText('Scan all pages (including this one) with any kind of scanner / scanning app available to you and save the resulting scans as images on your computer. Install Python and the PaperStorage module (available on pip, \'python -m pip install paperstorage\') on your computer and start the restore process by typing \'python -m paperstorage --interactive-restore\' into a terminal.',
 					_hPos - (self._fontsize * 0.5), self._border + _offset, fontsize=(self._fontsize * 1), maxWidth=((self._width * mm) - (2 * self._border) - _offset))
 				_hPos += self.__renderText('2) Read the QR-Codes manually', _hPos, fontsize=(self._fontsize * 1))
-				_hPos += self.__renderText('Every page contains (except this first one) contains a QR-Code with one data block. Use any QR-Reader available to you to save the data blocks as plain text files. The first four characters of every data block contain the block id (starting from 0), the following four characters contain a document id, both Base64 encoded big endian integers. The remaining string is the binary data of the data block, also encoded in Base64. Concatenate the binary data in the correct order to restore the original file. The following shell script restores a backup from JPEG or PNG scans of a backup using zbar:',
+				_hPos += self.__renderText('Every page (except this first one) contains a QR-Code with one data block. Use any QR-Reader available to you to save the data blocks as plain text files. The first four characters of every data block contain the block id (starting from 0), the following four characters contain a document id, both Base64 encoded big endian integers. The remaining string is the binary data of the data block, also encoded in Base64. Concatenate the binary data in the correct order to restore the original file. The following shell script restores a backup from JPEG or PNG scans of a backup using zbar:',
 					_hPos - (self._fontsize * 0.5), self._border + _offset, fontsize=(self._fontsize * 1), maxWidth=((self._width * mm) - (2 * self._border) - _offset))
 				_hPos += self.__renderText('for i in *.{jpg,png}; do block=$(zbarimg --raw --quiet $i); if [ "$block" = "" ]; then \\\n'\
 					'echo "image $i not readable!"; continue; fi; echo $block | tail -c +5 | base64 -d > "$(echo $block | \\\n'\
@@ -318,18 +401,18 @@ class PaperStorage:
 					'    eD += pD\n'\
 					'(open(input(\'enter filename: \'), \'wb+\').write(base64.b32decode(eD)))\n', _hPos - (self._fontsize), self._border + _offset, fontsize=(self._fontsize * 0.9))
 		# end of first page
-		for n in range(_amountOfBlocks):
-			self.__newPage(True)
-			_rawDataBlock = self._rawData[(n * self._blockSize) : ((n+1) * self._blockSize)]
+		for n in range(self._amountOfBlocks):
+			self.__newPage(False if (self._noMetaPage and (n == 0)) else True)
+			self._blocks[n] = self._rawData[(n * self._blockSize) : ((n+1) * self._blockSize)]
 			_blockID = b64encode((n).to_bytes(2, byteorder='big'))
-			_qrData = (_blockID + _documentID + b64encode(_rawDataBlock))
+			_qrData = (_blockID + self._documentID + b64encode(self._blocks[n]))
 			assert(_qrData.decode('ascii')[3] == "=") 	# as we encoded two two byte (ushort) value to base64, we always (even at ushort_max)
 			assert(_qrData.decode('ascii')[7] == "=")	# should have a fill-character (=) at position 4 and 8. We can use it to detect the end of the
 														# page id and the start of the base64 encoded data block
 														# TODO: replace with nicer check & error message, even though this should *never* fail
 			_qrSize = min((self._width * mm) - (2 * self._border), (self._height * mm) - (40 * self._fontsize * 1.15))
-			self.__renderQRCode(_qrData.decode("ascii"), self._border + (((self._width * mm) - ((2 * self._border) + _qrSize)) / 2), 5 * self._fontsize, _qrSize, True)
-			_b32DataBlock = b32encode(_rawDataBlock)
+			self.__renderQRCode(_qrData.decode("ascii"), self._border + (((self._width * mm) - ((2 * self._border) + _qrSize)) / 2), 5.5 * self._fontsize, _qrSize, True)
+			_b32DataBlock = b32encode(self._blocks[n])
 			_amountOfLines = math.ceil(len(_b32DataBlock) / 80)
 			for k in range(_amountOfLines):
 				_hPos = (6.5 * self._fontsize) + _qrSize + (k * self._fontsize * 1.15)
@@ -397,6 +480,7 @@ class PaperStorage:
 		_file.close()
 		return True
 
+
 	def getPDF(self) -> bytes:
 		"""
 		Fetches the generated PDF document as a bytes object
@@ -407,3 +491,47 @@ class PaperStorage:
 			return None
 		assert(self._document != None)
 		return self._binaryDocument.getvalue()
+
+
+	def isDataReady(self) -> bool:
+		"""
+		Returns true if binary data is available, e.g. if all blocks of a backup are already read
+		(or if the PaperStorage object was initialized with data), False otherwise
+		"""
+		if (self._rawData != None):
+			return True
+		else: 
+			if (self._amountOfBlocks == 0):
+				return False
+			else:
+				if (len(self._blocks) == self._amountOfBlocks):
+					self._rawData = bytes()
+					for n in range(self._amountOfBlocks):
+						self._rawData += self._blocks[n]
+					return True
+		return False
+
+
+	def getData(self) -> bytes:
+		"""
+		Fetches the binary data of the PaperStorage object
+		
+		Returns None if no data is available, a bytes object otherwise
+		"""
+		if (not self.isDataReady()):
+			return None
+		else:
+			return self._rawData
+
+
+	def getMissingDataBlocks(self) -> list:
+		"""
+		Returns a list with the ids of the missing data blocks
+
+		Careful: Works only if the number of blocks is known and set (by reading the meta page first) or if the last page / block has already been read.
+		"""
+		_missingBlocks = []
+		for n in range(self._amountOfBlocks):
+			if (self._blocks.get(n, None) == None):
+				_missingBlocks.append(n)
+		return _missingBlocks
