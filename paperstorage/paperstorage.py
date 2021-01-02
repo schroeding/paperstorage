@@ -129,6 +129,33 @@ class PaperStorage:
 		watermark: str = None,
 		fontname: str = 'Courier',
 		noMetaPage: bool = False):
+		"""Creates a new PaperStorage object
+
+		Parameters:
+			data (str):
+				the string that should be saved
+			encoding (str):
+				this encoding will be used to transform the string into a bytes object, defaults to 'utf-8'
+			identifier (str or None):
+				an identifier for the specified data, like a filename or a (very brief) description
+			blockSize (int):
+				create blocks (pages) with the following amount of bytes
+				must be between 50 and 1500 and should be multiple of 50, defaults to 1500
+			size (int, int):
+				tupel of the width and height of the new document in millimeters, defaults to DIN A4 (210mm x 297mm)
+				PaperStorage.LETTER can be used for the north american 'letter' format
+			writeHostname (bool):
+				prints the hostname of this machine onto the document, defaults to True
+			writeDate (bool):
+				prints the current date onto the document, defaults to True
+			watermark (str or None):
+				embed a string as a watermark on every page, defaults to None
+			fontname (str):
+				sets the font to use in the pdf, defaults to Courier (built-in),
+				must be a monospace font (no exception will be raised otherwise, but the layout will look horrible)
+			noMetaPage (bool):
+				no first page (with meta information and restore instructions) is printed
+		"""
 		if ((not isinstance(data, str)) or (not isinstance(encoding, str))): raise TypeError('expected str')
 
 		_strToBytes = bytes(data, encoding)
@@ -146,8 +173,41 @@ class PaperStorage:
 		watermark: str = None,
 		fontname: str = 'Courier',
 		noMetaPage: bool = False):
+		"""Creates a new PaperStorage object
+
+		Parameters:
+			filename (str)):
+				the filename of the file to be opened
+			identifier (str or None):
+				an identifier for the specified data, like a filename or a (very brief) description
+			blockSize (int):
+				create blocks (pages) with the following amount of bytes
+				must be between 50 and 1500 and should be multiple of 50, defaults to 1500
+			size (int, int):
+				tupel of the width and height of the new document in millimeters, defaults to DIN A4 (210mm x 297mm)
+				PaperStorage.LETTER can be used for the north american 'letter' format
+			writeHostname (bool):
+				prints the hostname of this machine onto the document, defaults to True
+			writeDate (bool):
+				prints the current date onto the document, defaults to True
+			watermark (str or None):
+				embed a string as a watermark on every page, defaults to None
+			fontname (str):
+				sets the font to use in the pdf, defaults to Courier (built-in),
+				must be a monospace font (no exception will be raised otherwise, but the layout will look horrible)
+			noMetaPage (bool):
+				no first page (with meta information and restore instructions) is printed
+		"""
 		if (not isinstance(filename, str)): raise TypeError('expected str')
-		raise NotImplementedError() # TODO: implement from file
+		
+		try:
+			_file = open(filename, 'rb')
+		except (Exception):
+			raise ValueError('cannot open file with given filename')
+		_fileToBytes = bytes(_file.read())
+		if (identifier == None): identifier = filename
+		return cls(_fileToBytes, identifier=identifier, blockSize=blockSize, size=size, writeHostname=writeHostname, writeDate=writeDate, watermark=watermark, fontname=fontname, noMetaPage=noMetaPage)
+
 
 
 	def restoreMetaData(self, identifier: str, size: int, documentID: str = None, blockSize: int = 1500, sha256Hash: str = None) -> bool:
