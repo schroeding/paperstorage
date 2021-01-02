@@ -20,7 +20,7 @@ class PaperStorage:
 	_fontsize = None
 	_font = None
 
-	_softwareIdentifier = "Paperstorage Backup"
+	_softwareIdentifier = "PaperStorage Backup"
 	_backupType = "binary data"
 	_customFirstPage = ''
 
@@ -205,6 +205,7 @@ class PaperStorage:
 		if (self._amountOfBlocks < (blockID + 1)): self._amountOfBlocks = blockID + 1
 		if (len(blockData) > self._blockSize): self._blockSize = len(blockData)
 		self._blocks[blockID] = blockData
+		return True
 		
 
 	def restoreFromQRString(self, qrData: str) -> bool:
@@ -225,6 +226,7 @@ class PaperStorage:
 		elif ((len(qrData) > 8) and (qrData[3] == '=') and (qrData[7] == '=')):
 			return self.restoreDataBlock(int.from_bytes(b64decode(qrData[0:4]), byteorder='big', signed=False), b64decode(qrData[8:]), str(qrData[4:8]))
 		return False
+
 
 	def __renderQRCode(self, data: str, wPos: int, hPos: int, size: int, force31: bool = False) -> None:
 		_qrCode = None
@@ -366,7 +368,7 @@ class PaperStorage:
 				_offset = stringWidth('   ', self._font, self._fontsize)
 				_hPos += self.__renderText('To restore this backup, follow one of the following restore methods:', _hPos + (self._fontsize * 0.3), fontsize=(self._fontsize * 1.2), alignCenter=True)
 				_hPos += self.__renderText('1) Read the QR-Codes with PaperStorage', _hPos, fontsize=(self._fontsize * 1))
-				_hPos += self.__renderText('Scan all pages (including this one) with any kind of scanner / scanning app available to you and save the resulting scans as images on your computer. Install Python and the PaperStorage module (available on pip, \'python -m pip install paperstorage\') on your computer and start the restore process by typing \'python -m paperstorage --interactive-restore\' into a terminal.',
+				_hPos += self.__renderText('Scan all pages (including this one) with any kind of scanner / scanning app available to you and save the resulting scans as images on your computer. Install Python and the PaperStorage module (available on pip, \'python -m pip install paperstorage[full]\') on your computer and start the restore process by typing \'python -m paperstorage --interactive-restore\' into a terminal.',
 					_hPos - (self._fontsize * 0.5), self._border + _offset, fontsize=(self._fontsize * 1), maxWidth=((self._width * mm) - (2 * self._border) - _offset))
 				_hPos += self.__renderText('2) Read the QR-Codes manually', _hPos, fontsize=(self._fontsize * 1))
 				_hPos += self.__renderText('Every page (except this first one) contains a QR-Code with one data block. Use any QR-Reader available to you to save the data blocks as plain text files. The first four characters of every data block contain the block id (starting from 0), the following four characters contain a document id, both Base64 encoded big endian integers. The remaining string is the binary data of the data block, also encoded in Base64. Concatenate the binary data in the correct order to restore the original file. The following shell script restores a backup from JPEG or PNG scans of a backup using zbar:',
