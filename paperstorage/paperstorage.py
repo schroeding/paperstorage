@@ -21,6 +21,8 @@ class PaperStorage:
 	_font = None
 
 	_softwareIdentifier = "Paperstorage Backup"
+	_backupType = "binary data"
+	_customFirstPage = ''
 
 	def __init__(self,
 		data: bytes = None,
@@ -30,7 +32,8 @@ class PaperStorage:
 		writeHostname: bool = True,
 		writeDate: bool = True,
 		watermark: str = None,
-		fontname: str = 'Courier'):
+		fontname: str = 'Courier',
+		noMetaPage: bool = False):
 		"""
 		Creates a new PaperStorage object
 
@@ -54,6 +57,8 @@ class PaperStorage:
 			fontname (str):
 				sets the font to use in the pdf, defaults to Courier (built-in),
 				must be a monospace font (no exception will be raised otherwise, but the layout will look horrible)
+			noMetaPage (bool):
+				no first page (with meta information and restore instructions) is printed
 		"""
 		if (not (isinstance(data, bytes) or (data is None))):
 			if (isinstance(data, str)): raise TypeError('data must be bytes object or None - use classmethod fromStr to handle str')
@@ -86,6 +91,9 @@ class PaperStorage:
 
 		if (not isinstance(fontname, str)): raise TypeError('fontname must be str')
 		self._font = fontname
+
+		if (not isinstance(noMetaPage, bool)): raise TypeError('noMetaPage must be bool')
+		self._noMetaPage = noMetaPage
 
 		self._document = None
 		self._binaryDocument = io.BytesIO()
@@ -154,17 +162,17 @@ class PaperStorage:
 			self._document.drawCentredString((self._width * mm) / 2, (self._height * mm) / 2, self._watermark)
 			self._document.restoreState()
 		self.__renderLine(4 * self._fontsize)
-		self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(len(self._rawData) / self._blockSize) + 1}', 2 * self._fontsize, alignRight=True);
-		self.__renderText(self._softwareIdentifier, 2 * self._fontsize)
+		self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(len(self._rawData) / self._blockSize) + 1}', 2.5 * self._fontsize, alignRight=True);
+		self.__renderText(self._softwareIdentifier, 2.5 * self._fontsize)
 
 		self.__renderLine((self._height * mm) - (4 * self._fontsize))
-		self.__renderText(self._identifier, (self._height * mm) - (3.5 * self._fontsize))
+		self.__renderText(self._identifier, (self._height * mm) - (4 * self._fontsize))
 		if (self._writeDate):
-			self.__renderText(f'Created on {self._date}', (self._height * mm) - (3.5 * self._fontsize), alignRight=True)
+			self.__renderText(f'Created on {self._date}', (self._height * mm) - (4 * self._fontsize), alignRight=True)
 		elif (self._writeHostname):
-			self.__renderText(gethostname(), (self._height * mm) - (3.5 * self._fontsize), alignRight=True)
+			self.__renderText(gethostname(), (self._height * mm) - (4 * self._fontsize), alignRight=True)
 		else:
-			self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(len(self._rawData) / self._blockSize) + 1}',  (self._height * mm) - (3.5 * self._fontsize), alignRight=True);
+			self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(len(self._rawData) / self._blockSize) + 1}',  (self._height * mm) - (4 * self._fontsize), alignRight=True);
 
 
 	def __renderText(self, text: str,
@@ -245,20 +253,63 @@ class PaperStorage:
 		self._document.setTitle(f'{self._softwareIdentifier} - {self._identifier}')
 		self.__newPage(False)
 		# first page with meta info
-		self.__renderText("This document contains a paper backup of binary data", 5 * self._fontsize, fontsize=(self._fontsize * 1.3),
+		self.__renderText(f'This document contains a paper backup of {self._backupType}', 5 * self._fontsize, fontsize=(self._fontsize * 1.3),
 			bold=True, alignCenter=True)
-		_hPos = self.__renderText(f'Identifier (e.g. filename): {self._identifier}\n'\
-			f'Size of binary data:        {len(self._rawData)} bytes\n'\
-			f'{f"Date of backup:             {self._date}" if self._writeDate else ""}\n'\
-			f'{f"Backup created on:          {gethostname()}" if self._writeHostname else ""}\n'\
+		_hPos = 8 * self._fontsize
+		_hPos += self.__renderText(f'Identifier:           {self._identifier}\n'\
+			f'Size of binary data:  {len(self._rawData)} bytes\n'\
+			f'{f"Date of backup:       {self._date}" if self._writeDate else ""}\n'\
+			f'{f"Backup created on:    {gethostname()}" if self._writeHostname else ""}\n'\
 			f'\n'\
-			f'Block size used for backup: {self._blockSize} bytes\n'\
-			f'Blocks used:                {_amountOfBlocks}\n'\
-			f'CRC32 of restored backup:   {_crc32}\n'\
-			f'MD5 hash of restored data:  {_md5}\n', 8 * self._fontsize, self._border + (0.25 * self._width * mm), fontsize=(self._fontsize * 1.2))
+			f'Block size of backup: {self._blockSize} bytes\n'\
+			f'Blocks used:          {_amountOfBlocks}\n'\
+			f'CRC32 checksum:       {_crc32}\n'\
+			f'MD5 hash:             {_md5}\n', _hPos, self._border + (0.24 * self._width * mm), fontsize=(self._fontsize * 1.2), maxWidth=(0.6 * self._width * mm))
+		
 		_metadata = f'hcpb01,{_documentID.decode("ascii")},{b64encode((self._identifier).encode("utf-8")).decode("ascii")},{str(len(self._rawData))},{str(self._blockSize)},{_sha256}'
-		self.__renderQRCode(_metadata, self._border + (0.025 * self._width * mm), 8 * self._fontsize, (0.20 * self._width * mm) - self._fontsize)
-		# TODO: restore information here
+		self.__renderQRCode(_metadata, self._border + (0.02 * self._width * mm), 8 * self._fontsize, (0.20 * self._width * mm) - self._fontsize)
+
+		if (not self._noMetaPage):
+			if (self._customFirstPage != ''):
+				self.__renderText(self._customFirstPage, _hPos, fontsize=(self._fontsize * 1.1))
+			else:
+				_offset = stringWidth('   ', self._font, self._fontsize)
+				_hPos += self.__renderText('To restore this backup, follow one of the following restore methods:', _hPos + (self._fontsize * 0.3), fontsize=(self._fontsize * 1.2), alignCenter=True)
+				_hPos += self.__renderText('1) Read the QR-Codes with PaperStorage', _hPos, fontsize=(self._fontsize * 1))
+				_hPos += self.__renderText('Scan all pages (including this one) with any kind of scanner / scanning app available to you and save the resulting scans as images on your computer. Install python and the PaperStorage (available on pip, \'python -m pip install paperstorage\') module on your computer and start the restore by typing \'python -m paperstorage --interactive-restore\' in a terminal.',
+					_hPos - (self._fontsize * 0.5), self._border + _offset, fontsize=(self._fontsize * 1), maxWidth=((self._width * mm) - (2 * self._border) - _offset))
+				_hPos += self.__renderText('2) Read the QR-Codes manually', _hPos, fontsize=(self._fontsize * 1))
+				_hPos += self.__renderText('Every page contains (except this first one) contains a QR-Code with one data block. Use any QR-Reader available to you to save the data blocks as plain text files. The first four characters of every data block contain the block id (starting from 0), the following four characters contain a document id, both Base64 encoded big endian integers. The remaining string is the binary data of the data block, also encoded in Base64. Concatenate the binary data in the correct order to restore the original file. The following shell script restores a backup from JPEG or PNG scans of a backup using zbar:',
+					_hPos - (self._fontsize * 0.5), self._border + _offset, fontsize=(self._fontsize * 1), maxWidth=((self._width * mm) - (2 * self._border) - _offset))
+				_hPos += self.__renderText('for i in *.{jpg,png}; do block=$(zbarimg --raw --quiet $i); if [ "$block" = "" ]; then \\\n'\
+					'echo "image $i not readable!"; continue; fi; echo $block | tail -c +5 | base64 -d > "$(echo $block | \\\n'\
+					'head -c 4 | base64 -d | od --endian big -A n -t u2 -w2 | xargs).hcpbblock"; done; \\\n'\
+					'for i in *.hcpbblock; do cat $i >> restored_backup; rm -f $i; done;', _hPos - (self._fontsize), self._border + _offset, fontsize=(self._fontsize * 0.9))
+				_hPos += self.__renderText('3) Manual backup restoration', _hPos, fontsize=(self._fontsize * 1))
+				_hPos += self.__renderText('Each page also contains the binary data encoded in Base32, below the QR-Code. Each line contains a line number, up to 80 characters of base32 encoded data (splitted into 8 character chunks for enhanced readability). The last five characters are a Base85 encoded CRC32 checksum of the decoded binary data of the line, allowing the verification of each line. Only the Base32 encoded binary data is necessary to restore the original file. The following python script can be used to manually restore a backup from the Base32 data:',
+					_hPos - (self._fontsize * 0.5), self._border + _offset, fontsize=(self._fontsize * 1), maxWidth=((self._width * mm) - (2 * self._border) - _offset))
+				_hPos += self.__renderText('import base64, sys, math, binascii\n'\
+					'from base64 import b85encode, b32decode\n'\
+					'dS, bS, eD = int(input(\'size of binary data: \')), int(input(\'block size used for backup: \')), \'\'\n'\
+					'rB = (dS // bS)\n'\
+					'if (dS % bS != 0): rB += 1\n'\
+					'for i in range(rB):\n'\
+					'    print(f\'page {i + 2} of {rB + 1}\')\n'\
+					'    if (((dS - (bS * i)) // bS) >= 1): rB, pD = math.ceil((bS * 8 + 4) / 5), \'\'\n'\
+					'    else: rB, pD = math.ceil(((dS - (bS * i)) * 8 + 4) / 5), \'\'\n'\
+					'    for n in range(math.ceil((rB - 1) / 80)):\n'\
+					'        lD, nL = \'\', False\n'\
+					'        while (not nL):\n'\
+					'            lD = input(f\'input line {n + 1} of {math.ceil((rB - 1) / 80)}: \').upper().replace(\' \',\'\')\n'\
+					'            try:\n'\
+					'                c32 = b85encode(binascii.crc32(b32decode(lD)).to_bytes(4, byteorder=\'big\'))\n'\
+					'            except (binascii.Error):\n'\
+					'                print(\'invalid line, restart\')\n'\
+					'                continue\n'\
+					'            if (input(f\'crc32 is {c32.decode("utf-8")}, ok? \')!=\'no\'): nL = True\n'\
+					'        pD += lD\n'\
+					'    eD += pD\n'\
+					'(open(input(\'enter filename: \'), \'wb+\').write(base64.b32decode(eD)))\n', _hPos - (self._fontsize), self._border + _offset, fontsize=(self._fontsize * 0.9))
 		# end of first page
 		for n in range(_amountOfBlocks):
 			self.__newPage(True)
@@ -274,7 +325,7 @@ class PaperStorage:
 			_b32DataBlock = b32encode(_rawDataBlock)
 			_amountOfLines = math.ceil(len(_b32DataBlock) / 80)
 			for k in range(_amountOfLines):
-				_hPos = (6 * self._fontsize) + _qrSize + (k * self._fontsize * 1.15)
+				_hPos = (6.5 * self._fontsize) + _qrSize + (k * self._fontsize * 1.15)
 				_lineData = _b32DataBlock[(k * 80) : ((k+1) * 80)]
 				_lineDataCrc32InBase85 = b85encode(binascii.crc32(b32decode(_lineData)).to_bytes(4, byteorder='big')).decode('ascii')
 				_lineDataInBlocks = ''
@@ -285,6 +336,34 @@ class PaperStorage:
 				self.__renderText(_lineDataCrc32InBase85, _hPos, alignRight=True, alpha=0.4)
 		self._document.save()
 		return True
+
+	
+	def setBackupType(self, typename: str) -> None:
+		"""
+		Changes the string that is written on the first page
+		
+		Parameters:
+			typename (str):
+				'This document contains a paper backup of [type]', defaults to 'binary data'
+
+		Returns None
+		"""
+		if (not isinstance(typename, str)): raise TypeError('expected str')
+		self._backupType = typename
+
+
+	def setSoftwareIdentifier(self, softwareIdentifier: str) -> None:
+		"""
+		Changes the string that is written on the top left corner of every page
+		
+		Parameters:
+			softwareIdentifier (str):
+				string to print on the left corner of every page, defaults to 'PaperStorage Backup'
+
+		Returns None
+		"""
+		if (not isinstance(softwareIdentifier, str)): raise TypeError('expected str')
+		self._softwareIdentifier = softwareIdentifier
 
 
 	def savePDF(self, filename: str) -> bool:
