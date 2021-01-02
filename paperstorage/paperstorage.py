@@ -4,7 +4,7 @@ import datetime
 import binascii
 import hashlib
 import qrcode
-from base64 import b64decode, b64encode, b32encode, b32decode, b85encode
+from base64 import b64encode, b32encode, b32decode, b85encode
 from socket import gethostname
 from random import random
 from reportlab.pdfgen.canvas import Canvas
@@ -34,8 +34,7 @@ class PaperStorage:
 		watermark: str = None,
 		fontname: str = 'Courier',
 		noMetaPage: bool = False):
-		"""
-		Creates a new PaperStorage object
+		"""Creates a new PaperStorage object
 
 		Parameters:
 			data (bytes or None):
@@ -273,7 +272,7 @@ class PaperStorage:
 			f'Blocks used:          {_amountOfBlocks}\n'\
 			f'CRC32 checksum:       {_crc32}\n'\
 			f'MD5 hash:             {_md5}\n', _hPos, self._border + (0.24 * self._width * mm), fontsize=(self._fontsize * 1.2), maxWidth=(0.6 * self._width * mm))
-		
+
 		_metadata = f'hcpb01,{_documentID.decode("ascii")},{b64encode((self._identifier).encode("utf-8")).decode("ascii")},{str(len(self._rawData))},{str(self._blockSize)},{_sha256}'
 		self.__renderQRCode(_metadata, self._border + (0.02 * self._width * mm), 8 * self._fontsize, (0.20 * self._width * mm) - self._fontsize)
 
