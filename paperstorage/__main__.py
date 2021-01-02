@@ -3,8 +3,7 @@ import sys
 from paperstorage import PaperStorage
 
 def main(argv) -> None:
-	"""
-	Main method to start paperstorage in interactive mode / from the console (python -m paperstorage)
+	"""Main method to start paperstorage in interactive mode / from the console (python -m paperstorage)
 	Do not use if you want to use paperstorage as a module.
 
 	Takes arguments, returns nothing
@@ -28,16 +27,16 @@ def main(argv) -> None:
 	if (arguments.inputFilename != None):
 		try:
 			_ps = PaperStorage.fromFile(arguments.inputFilename,
-			identifier=arguments.identifier,
 			blockSize=arguments.blocksize,
+			identifier=arguments.identifier,
 			size=_format)
 		except (ValueError):
 			print('Cannot open the specified input file.')
 			return
 	elif ((not sys.stdin.isatty()) or (arguments.forceStdin)):
 		_ps = PaperStorage(bytes(sys.stdin.buffer.read()),
-			identifier=arguments.identifier,
 			blockSize=arguments.blocksize,
+			identifier=arguments.identifier,
 			size=_format)
 	else:
 		parser.print_help()
