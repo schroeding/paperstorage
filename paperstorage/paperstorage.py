@@ -121,17 +121,25 @@ class PaperStorage:
 		writeHostname: bool = True,
 		writeDate: bool = True,
 		watermark: str = None,
-		fontname: str = 'Courier'):
+		fontname: str = 'Courier',
+		noMetaPage: bool = False):
 		if ((not isinstance(data, str)) or (not isinstance(encoding, str))): raise TypeError('expected str')
 
 		_strToBytes = bytes(data, encoding)
-		return cls(_strToBytes, identifier=identifier, blockSize=blockSize, size=size, writeHostname=writeHostname, writeDate=writeDate, watermark=watermark, fontname=fontname)
+		return cls(_strToBytes, identifier=identifier, blockSize=blockSize, size=size, writeHostname=writeHostname, writeDate=writeDate, watermark=watermark, fontname=fontname, noMetaPage=noMetaPage)
 
 
 	@classmethod
 	def fromFile(cls,
 		filename: str,
-		size: (int, int) = A4):
+		identifier: str = None,
+		blockSize: int = 1500,
+		size: (int, int) = A4,
+		writeHostname: bool = True,
+		writeDate: bool = True,
+		watermark: str = None,
+		fontname: str = 'Courier',
+		noMetaPage: bool = False):
 		if (not isinstance(filename, str)): raise TypeError('expected str')
 		raise NotImplementedError() # TODO: implement from file
 
