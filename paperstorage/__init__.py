@@ -1,5 +1,5 @@
-"""PaperStorage
-
+"""
+PaperStorage
 A module to create paper backups for arbitrary data that are recoverable by simple means
 """
 
