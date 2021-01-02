@@ -3,8 +3,7 @@ import sys
 from paperstorage import PaperStorage
 
 def main(argv) -> None:
-	"""
-	Main method to start paperstorage in interactive mode / from the console (python -m paperstorage)
+	"""Main method to start paperstorage in interactive mode / from the console (python -m paperstorage)
 	Do not use if you want to use paperstorage as a module.
 
 	Takes arguments, returns nothing
@@ -42,7 +41,7 @@ def main(argv) -> None:
 	else:
 		parser.print_help()
 		return
-		
+
 	_ps.savePDF(arguments.outputFilename)
 
 
