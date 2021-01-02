@@ -34,7 +34,8 @@ class PaperStorage:
 		watermark: str = None,
 		fontname: str = 'Courier',
 		noMetaPage: bool = False):
-		"""Creates a new PaperStorage object
+		"""
+		Creates a new PaperStorage object
 
 		Parameters:
 			data (bytes or None):
@@ -191,7 +192,8 @@ class PaperStorage:
 		alignRight: bool = False,
 		alignCenter: bool = False,
 		alpha: float = 1.0) -> int:
-		"""Renders a string or paragraph onto the PDF document
+		"""
+		Renders a string or paragraph onto the PDF document
 
 		Returns the height of the newly added text
 		"""
@@ -233,14 +235,16 @@ class PaperStorage:
 
 
 	def __renderLine(self, hPos: int) -> None:
-		"""Renders a line onto the PDF document
+		"""
+		Renders a line onto the PDF document
 		"""
 		self._document.setLineWidth(0.25)
 		self._document.line(self._border, (self._height * mm) - hPos, (self._width * mm) - self._border, (self._height * mm) - hPos)
 
 
 	def __renderPDF(self) -> bool:
-		"""Creates the PDF document from the available data
+		"""
+		Creates the PDF document from the available data
 
 		Returns False if generation failed, True otherwise
 		"""
@@ -343,7 +347,8 @@ class PaperStorage:
 
 	
 	def setBackupType(self, typename: str) -> None:
-		"""Changes the string that is written on the first page
+		"""
+		Changes the string that is written on the first page
 		
 		Parameters:
 			typename (str):
@@ -356,7 +361,8 @@ class PaperStorage:
 
 
 	def setSoftwareIdentifier(self, softwareIdentifier: str) -> None:
-		"""Changes the string that is written on the top left corner of every page
+		"""
+		Changes the string that is written on the top left corner of every page
 		
 		Parameters:
 			softwareIdentifier (str):
@@ -369,7 +375,8 @@ class PaperStorage:
 
 
 	def savePDF(self, filename: str) -> bool:
-		"""Saves the generated PDF document to the specified path
+		"""
+		Saves the generated PDF document to the specified path
 
 		Parameters:
 			filename (str):
@@ -392,7 +399,8 @@ class PaperStorage:
 		return True
 
 	def getPDF(self) -> bytes:
-		"""Fetches the generated PDF document as a bytes object
+		"""
+		Fetches the generated PDF document as a bytes object
 
 		Returns None if generation failed, a bytes object otherwise
 		"""
