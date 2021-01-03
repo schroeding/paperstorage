@@ -5,7 +5,7 @@ Can be used as a standalone tool or integrated as a module.
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e2215b5bf74e45d4a7bfb5eff5c41ba3)](https://app.codacy.com/gh/schroeding/paperstorage?utm_source=github.com&utm_medium=referral&utm_content=schroeding/paperstorage&utm_campaign=Badge_Grade) [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/bd3aeab0a9d74e1183e7e5788ff13335)](https://www.codacy.com/gh/schroeding/paperstorage/dashboard?utm_source=github.com&utm_medium=referral&utm_content=schroeding/paperstorage&utm_campaign=Badge_Coverage)
 
-You can find a sample PDF as [sample.pdf](sample.pdf) in this repository.
+You can find a sample PDF as [sample.pdf](https://github.com/schroeding/paperstorage/blob/master/sample.pdf) in this repository.
 
 ## Installation
 
