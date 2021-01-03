@@ -17,9 +17,12 @@ setuptools.setup(
 		"Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
 		"Intended Audience :: System Administrators",
+        "Intended Audience :: End Users/Desktop",
 		"Intended Audience :: Developers",
         "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
         "Operating System :: OS Independent",
+        "Topic :: System :: Archiving :: Backup",
+        "Topic :: Printing"
     ],
     python_requires='>=3.6',
 )

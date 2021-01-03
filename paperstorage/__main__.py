@@ -7,38 +7,13 @@ try:
 	import PIL
 	import PIL.ImageOps
 except (ImportError):
-	print('PIL / Pillow is not installed. Please install it using \'python -m pip install pillow\' and try again.')
-	exit()
+	print('PIL / pillow is not installed, but required to restore backups. Please install it with \'python -m pip install pillow\'')
+	quit()
 try:
 	import pyzbar.pyzbar as pyzbar
 except (ImportError):
-	print('pyzbar is not installed. Please install it using \'python -m pip install pyzbar\' and try again.')
-	exit()
-
-def __restoreFromFolder(folder: str, ps: PaperStorage) -> PaperStorage:
-	"""
-	Tries to restore a backup from the image files in a folder
-
-	Parameters:
-		folder (str):
-			path of target folder
-			must be a valid folder path or FileNotFound etc. exceptions will be raised
-		ps (PaperStorage):
-			PaperStorage object
-
-	Returns a PaperStorage object
-	"""
-	if (ps is None): ps = PaperStorage()
-	for file in os.listdir(folder):
-		if (not os.path.isfile(os.path.join(folder, file))): continue
-		try:
-			_image = PIL.Image.open(os.path.join(folder, file))
-		except (PIL.UnidentifiedImageError):
-			continue
-		for n in pyzbar.decode(_image):
-			ps.restoreFromQRString(n.data.decode('ascii'))
-	return ps
-
+	print('pyzbar is not installed, but required to restore backups. Please install it with \'python -m pip install pyzbar\'')
+	quit()
 
 def __interactiveFolder(_ps: PaperStorage) -> None:
 	while (True):
@@ -46,14 +21,14 @@ def __interactiveFolder(_ps: PaperStorage) -> None:
 		if (os.path.isdir(_folder)):
 			break
 		print('The path specified is not a folder or does not exist. Please try again.')
-	_ps = __restoreFromFolder(_folder, _ps)
+	_ps.restoreFromFolder(_folder)
 	while (not _ps.isDataReady()):
 		if (_ps.getMissingDataBlocks() == []):
 			print(f'\nNo valid QR-Codes found. Try making sure the folder name (\'{_folder}\') is correct.\nOtherwise try rescanning the pages with a higher quality setting and try again.')
 			quit()
 		print(f'\nThe backup could not be restored completly. Page(s) {",".join([str(n+2) for n in _ps.getMissingDataBlocks()])} must be rescanned.')
 		input('Please rescan the listed pages and save them to the same folder as before. Press [Enter] when you are done. ')
-		_ps = __restoreFromFolder(_folder, _ps)
+		_ps.restoreFromFolder(_folder)
 	if (_ps._sha256 != hashlib.sha256(_ps.getData()).hexdigest()):
 		print(f'\nYour backup of \'{_ps._identifier}\' was restored, but something went wrong. (hash mismatch)\nThis should never happen. Please try to rescan all files into a fresh folder.\nYour file will still be saved, but is probably corrupt.')
 	else:
@@ -105,17 +80,17 @@ def __interactiveWebcam(_ps: PaperStorage) -> None:
 				if (n.data.decode('ascii') == _lastCode): continue
 				_lastCode = n.data.decode('ascii')
 				if (n.data.decode('ascii')[:6] != 'hcpb01'):
-					print('\nQR-Code detected, but this is not the first page.\nPlease hold the first page into your webcam...')
+					print('\nQR-Code detected, but this is not the first page.\nPlease hold the first page in front of your webcam...')
 					continue
 				_ps.restoreFromQRString(n.data.decode('ascii'))
-				print('\nFirst page read!')
+				print(f'\nFirst page read! Restoring file \'{_ps._identifier}\' with {_ps._amountOfBlocks + 1} pages')
 				_pageRead = True
 		except (KeyboardInterrupt):
 			quit()
 
 	try:
 		for i in _ps.getMissingDataBlocks():
-			print(f'\nPlease hold page {i + 2} into the webcam...')
+			print(f'\nPlease hold page {i + 2} in front of the webcam...')
 			_pageRead = False
 			while (not _pageRead):
 				_image = PIL.Image.frombytes('RGB', (_webcamWidth, _webcamHeight), pygame.image.tostring(_webcam.get_image(), 'RGB', False))
@@ -125,7 +100,7 @@ def __interactiveWebcam(_ps: PaperStorage) -> None:
 					_lastCode = n.data.decode('ascii')
 					_ps.restoreFromQRString(n.data.decode('ascii'))
 					if (i in _ps.getMissingDataBlocks()):
-						print(f'\nQR-Code detected, but this is not page {i + 2}.\nPlease hold page {i + 2} into the webcam...')
+						print(f'\nQR-Code detected, but this is not page {i + 2}.\nPlease hold page {i + 2} in front of the webcam...')
 						continue
 					print(f'\nPage {i + 2} read!')
 					_pageRead = True
@@ -159,7 +134,7 @@ def main(argv) -> None:
 	parser.add_argument('-o', dest='outputFilename', metavar='filename', default='backup.pdf', help='filename to write to', required=False)
 	parser.add_argument('-f', dest='inputFilename', metavar='filename', help='read the specified file, otherwise stdin', required=False)
 	parser.add_argument('-id', dest='identifier', metavar='identifier', help='identifier that will be printed on the backup file', required=False)
-	parser.add_argument('--format', dest='format', choices=['A4','Letter'], default='A4', type=str, help='uses the specified format for the output PDF file')
+	parser.add_argument('-format', dest='format', choices=['A4','Letter'], default='A4', type=str, help='uses the specified format for the output PDF file')
 	parser.add_argument('--force-from-stdin', dest='forceStdin', action='store_true', default=False, help='forces a read from stdin, even with no piped data available', required=False)
 	parser.add_argument('-restore', dest='restore', metavar='folder_path' ,default=None, type=str, help='restores a backup from scanned images inside a folder', required=False)
 	parser.add_argument('--interactiverestore', dest='interactiveRestore', action='store_true', default=False, help='starts an interactive restore of a backup', required=False)
@@ -175,6 +150,8 @@ def main(argv) -> None:
 			'2) I want to try reading a backup using my webcam (experimental)\n'\
 			'3) I\'m here because my backup said so, please guide me step-by-step\n'\
 			'0) Quit\n')
+
+		_ps = PaperStorage()
 
 		_choice = None
 
@@ -192,7 +169,7 @@ def main(argv) -> None:
 			__interactiveFolder(_ps)
 
 		elif (_choice == 2):
-			raise NotImplementedError('TODO')
+			__interactiveWebcam(_ps)
 
 		elif (_choice == 3):
 			if (input('\nDo you have a (working) scanner nearby? (yes / no) ').startswith('y')):
@@ -214,11 +191,13 @@ def main(argv) -> None:
 
 	elif (arguments.restore != None):
 
-		if (not os.path.isdir(argument.restore)):
+		_ps = PaperStorage()
+
+		if (not os.path.isdir(arguments.restore)):
 			print('Invalid path specified')
 			quit()
 
-		_ps = __restoreFromFolder(arguments.restore, _ps)
+		_ps.restoreFromFolder(arguments.restore)
 		if (not _ps.isDataReady()):
 			if (_ps.getMissingDataBlocks() == []):
 				print('No data blocks found, doublecheck the path and try rescanning the pages')

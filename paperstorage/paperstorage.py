@@ -1,3 +1,4 @@
+import os
 import io
 import math
 import datetime
@@ -288,6 +289,44 @@ class PaperStorage:
 		return False
 
 
+	def restoreFromFolder(self, folder: str, supressImportError: bool = True) -> bool:
+		"""
+		Tries to restore a backup from the image files in a folder
+
+		This method requires pillow and pyzbar. A resulting ImportError will be supressed if not otherwise specified.
+
+		Parameters:
+			folder (str):
+				path of target folder
+				must be a valid folder path or FileNotFound etc. exceptions will be raised
+			supressImportError (bool):
+				defaults to True, must be set to False if this function should not silently fail if pillow or pyzbar are not installed
+
+		Returns True if all data has been restored, False otherwise
+		In the latter case, use getMissingDataBlocks to get the missing pages
+		"""
+		try:
+			import PIL
+			import PIL.ImageOps
+		except (ImportError):
+			if (not supressImportError): raise ImportError('pillow missing')
+			return False
+		try:
+			import pyzbar.pyzbar as pyzbar
+		except (ImportError):
+			if (not supressImportError): raise ImportError('pyzbar missing')
+			return False
+		for file in os.listdir(folder):
+			if (not os.path.isfile(os.path.join(folder, file))): continue
+			try:
+				_image = PIL.Image.open(os.path.join(folder, file))
+			except (PIL.UnidentifiedImageError):
+				continue
+			for n in pyzbar.decode(_image):
+				self.restoreFromQRString(n.data.decode('ascii'))
+		return self.isDataReady()
+
+
 	def __renderQRCode(self, data: str, wPos: int, hPos: int, size: int, force31: bool = False) -> None:
 		_qrCode = None
 		if ((len(data) >= 262) or force31):
@@ -305,6 +344,8 @@ class PaperStorage:
 
 	def __newPage(self, notFirstPage: bool = True) -> None:
 		if (notFirstPage): self._document.showPage() # page break
+		self._document.setFillColorRGB(1,1,1)
+		self._document.rect(0, 0, self._width * mm, self._height * mm, fill=1, stroke=0)
 		if (self._watermark != None):
 			self._document.saveState()
 			self._document.translate(1 * self._width * mm * 0.225, -1 * self._height * mm * 0.45)
@@ -315,8 +356,8 @@ class PaperStorage:
 			self._document.drawCentredString((self._width * mm) / 2, (self._height * mm) / 2, self._watermark)
 			self._document.restoreState()
 		self.__renderLine(4 * self._fontsize)
-		self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(self._dataSize / self._blockSize) + (0 if self._noMetaPage else 1)}', 2.5 * self._fontsize, alignRight=True);
-		self.__renderText(self._softwareIdentifier, 2.5 * self._fontsize)
+		self.__renderText(f'Page {self._document.getPageNumber()} of {math.ceil(self._dataSize / self._blockSize) + (0 if self._noMetaPage else 1)}', 2.3 * self._fontsize, alignRight=True);
+		self.__renderText(self._softwareIdentifier, 2.3 * self._fontsize)
 
 		self.__renderLine((self._height * mm) - (4 * self._fontsize))
 		self.__renderText(self._identifier, (self._height * mm) - (4 * self._fontsize))
