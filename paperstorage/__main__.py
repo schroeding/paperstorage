@@ -15,6 +15,22 @@ except (ImportError):
 	print('pyzbar is not installed, but required to restore backups. Please install it with \'python -m pip install pyzbar\'')
 	quit()
 
+
+def __interactiveSave(_ps: PaperStorage) -> None:
+	if (_ps._sha256 != hashlib.sha256(_ps.getData()).hexdigest()):
+		print(f'\nYour backup of \'{_ps._identifier}\' was restored, but something went wrong. (hash mismatch)\nThis should never happen. Please try to rescan all files into a fresh folder.\nYour file will still be saved, but is probably corrupt.')
+	else:
+		print(f'\nThat worked, your backup of \'{_ps._identifier}\' was restored completly!')
+	while (True):
+		_filename = input('Please choose a filename to save the restored file to: ')
+		try:
+			_file = open(_filename, 'wb+')
+		except (Exception):
+			print('Could not save the data to the specified filename. Please try something else.')
+		break
+	_file.write(_ps.getData())
+	_file.close()
+
 def __interactiveFolder(_ps: PaperStorage) -> None:
 	while (True):
 		_folder = input('\nPlease enter the path of the folder you just saved the scans to: ')
@@ -29,19 +45,7 @@ def __interactiveFolder(_ps: PaperStorage) -> None:
 		print(f'\nThe backup could not be restored completly. Page(s) {",".join([str(n+2) for n in _ps.getMissingDataBlocks()])} must be rescanned.')
 		input('Please rescan the listed pages and save them to the same folder as before. Press [Enter] when you are done. ')
 		_ps.restoreFromFolder(_folder)
-	if (_ps._sha256 != hashlib.sha256(_ps.getData()).hexdigest()):
-		print(f'\nYour backup of \'{_ps._identifier}\' was restored, but something went wrong. (hash mismatch)\nThis should never happen. Please try to rescan all files into a fresh folder.\nYour file will still be saved, but is probably corrupt.')
-	else:
-		print(f'\nThat worked, your backup of \'{_ps._identifier}\' was restored completly!')
-	while (True):
-		_filename = input('Please choose a filename to save the restored file to: ')
-		try:
-			_file = open(_filename, 'wb+')
-		except (Exception):
-			print('Could not save the data to the specified filename. Please try something else.')
-		break
-	_file.write(_ps.getData())
-	_file.close()
+	__interactiveSave(_ps)
 
 
 def __interactiveWebcam(_ps: PaperStorage) -> None:
@@ -109,19 +113,7 @@ def __interactiveWebcam(_ps: PaperStorage) -> None:
 
 	_webcam.stop()
 
-	if (_ps._sha256 != hashlib.sha256(_ps.getData()).hexdigest()):
-		print(f'\nYour backup of \'{_ps._identifier}\' was restored, but something went wrong. (hash mismatch)\nThis should never happen. Please try to rescan all files into a fresh folder.\nYour file will still be saved, but is probably corrupt.')
-	else:
-		print(f'\nThat worked, your backup of \'{_ps._identifier}\' was restored completly!')
-	while (True):
-		_filename = input('Please choose a filename to save the restored file to: ')
-		try:
-			_file = open(_filename, 'wb+')
-		except (Exception):
-			print('Could not save the data to the specified filename. Please try something else.')
-		break
-	_file.write(_ps.getData())
-	_file.close()
+	__interactiveSave(_ps)
 
 
 def main(argv) -> None:
