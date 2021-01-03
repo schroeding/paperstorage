@@ -52,7 +52,7 @@ def __interactiveWebcam(_ps: PaperStorage) -> None:
 		print('Webcam restore uses PyGame to fetch webcam images, but PyGame is not installed. Please install it using \'python -m pip install pygame\' and try again.')
 		exit()
 	input('\nPress [Enter] to enable your webcam and to start the restore process. ')
-	
+
 	pygame.camera.init()
 	_cameras = pygame.camera.list_cameras()
 
@@ -126,8 +126,8 @@ def __interactiveWebcam(_ps: PaperStorage) -> None:
 
 def main(argv) -> None:
 	"""Main method to start paperstorage in interactive mode / from the console (python -m paperstorage)
-	Do not use if you want to use paperstorage as a module.
 
+	Do not use if you want to use paperstorage as a module.
 	Takes arguments, returns nothing
 	"""
 	parser = argparse.ArgumentParser('paperstorage')
@@ -245,7 +245,7 @@ def main(argv) -> None:
 		if (_ps.savePDF(arguments.outputFilename)):
 			print(f'Saved backup as \'{arguments.outputFilename}\'')
 		else:
-			print(f'Could not write to \'{argument.outputFilename}\'!')
+			print(f'Could not write to \'{arguments.outputFilename}\'!')
 
 
 main(sys.argv[1:])

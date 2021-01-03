@@ -13,7 +13,7 @@ class TestGeneration(unittest.TestCase):
 		self.assertRaises(TypeError, PaperStorage, data='string') # string
 		self.assertRaises(TypeError, PaperStorage, data=42424242) # int
 		self.assertRaises(TypeError, PaperStorage, data=bytearray('string', 'utf-8')) # bytearray
-		
+
 		self.assertRaises(TypeError, PaperStorage, blockSize='1500') # string
 		self.assertRaises(ValueError, PaperStorage, blockSize=49) # too low
 		self.assertRaises(ValueError, PaperStorage, blockSize=1501) # too large

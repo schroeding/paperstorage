@@ -200,7 +200,7 @@ class PaperStorage:
 				no first page (with meta information and restore instructions) is printed
 		"""
 		if (not isinstance(filename, str)): raise TypeError('expected str')
-		
+
 		try:
 			_file = open(filename, 'rb')
 		except (Exception):
@@ -212,8 +212,7 @@ class PaperStorage:
 
 
 	def restoreMetaData(self, identifier: str, size: int, documentID: str = None, blockSize: int = 1500, sha256Hash: str = None) -> bool:
-		"""
-		Sets the meta data, typically to start the restore process of a backup
+		"""Sets the meta data, typically to start the restore process of a backup
 
 		Parameters:
 			identifier (str):
@@ -603,7 +602,7 @@ class PaperStorage:
 		"""
 		if (self._rawData != None):
 			return True
-		else: 
+		else:
 			if (self._amountOfBlocks == 0):
 				return False
 			else:
