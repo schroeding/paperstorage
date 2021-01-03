@@ -3,17 +3,12 @@ import sys
 import os
 import hashlib
 from paperstorage import PaperStorage
-try:
-	import PIL
-	import PIL.ImageOps
-except (ImportError):
-	print('PIL / pillow is not installed, but required to restore backups. Please install it with \'python -m pip install pillow\'')
-	quit()
+import PIL
+import PIL.ImageOps
 try:
 	import pyzbar.pyzbar as pyzbar
 except (ImportError):
-	print('pyzbar is not installed, but required to restore backups. Please install it with \'python -m pip install pyzbar\'')
-	quit()
+	print('pyzbar could not be loaded. Please doublecheck if zbar (the library, not the python module) is installed on your system. Backup restore will fail until this is resolved.')
 
 
 def __interactiveSave(_ps: PaperStorage) -> None:
