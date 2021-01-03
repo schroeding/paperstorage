@@ -7,7 +7,7 @@ class TestGeneration(unittest.TestCase):
 		self.testDataStr = "Als Gregor Samsa eines Morgens aus unruhigen Träumen erwachte, fand er sich in seinem Bett zu einem ungeheueren Ungeziefer verwandelt. Er lag auf seinem panzerartig harten Rücken und sah, wenn er den Kopf ein wenig hob, seinen gewölbten, braunen, von bogenförmigen Versteifungen geteilten Bauch, auf dessen Höhe sich die Bettdecke, zum gänzlichen Niedergleiten bereit, kaum noch erhalten konnte. Seine vielen, im Vergleich zu seinem sonstigen Umfang kläglich dünnen Beine flimmerten ihm hilflos vor den Augen. " * 10
 		self.testDocumentStr = PaperStorage.fromStr(self.testDataStr, identifier='Unittest String', size=PaperStorage.A4, writeDate=False, writeHostname=False, watermark='Unittest')
 		self.testDocumentBytes = PaperStorage(bytes(self.testDataStr.encode('utf-8')), identifier='Unittest', size=PaperStorage.LETTER, writeDate=False, writeHostname=False, watermark='Unittest')
-		self.testDocumentFile = PaperStorage.fromFile('tests/random_testfile', identifier='Unittest File', size=PaperStorage.A4, watermark='Unittest')
+		self.testDocumentFile = PaperStorage.fromFile('paperstorage/tests/random_testfile', identifier='Unittest File', size=PaperStorage.A4, watermark='Unittest')
 		self.testDocumentEmpty = PaperStorage()
 
 	def testCreation(self):

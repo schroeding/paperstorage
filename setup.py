@@ -24,5 +24,11 @@ setuptools.setup(
 		"Topic :: System :: Archiving :: Backup",
 		"Topic :: Printing"
 	],
+	install_requires = [
+		"qrcode>=6.1", "reportlab>=3.5.58", "six>=1.15.0"
+	]
+	extras_require = {
+		'full':  ["Pillow>=8.1.0", "pygame~=2.0.1", "pyzbar>=0.1.8"],
+	}
 	python_requires='>=3.6',
 )

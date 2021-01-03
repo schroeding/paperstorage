@@ -10,7 +10,17 @@ You can find a sample PDF as [sample.pdf](sample.pdf) in this repository.
 ## Installation
 
 ```bash
+python -m pip install paperstorage[full]
+```
+
+If you only want to be able to write backups, you can install paperstorage without zbar and pillow:
+```bash
 python -m pip install paperstorage
+```
+
+If you want to try the webcam restore feature, you also need to install pyGame:
+```bash
+python -m pip install paperstorage[full] pygame
 ```
 
 ## Usage

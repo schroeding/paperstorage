@@ -1,0 +1,3 @@
+include paperstorage/tests/sample_images/*
+include paperstorage/tests/random_testfile
+include README.md
