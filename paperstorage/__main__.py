@@ -122,6 +122,8 @@ def main() -> None:
 	Do not use if you want to use paperstorage as a module.
 	Takes arguments, returns nothing
 	"""
+	argv = sys.argv[1:]
+	
 	parser = argparse.ArgumentParser('paperstorage')
 	parser.add_argument('-o', dest='outputFilename', metavar='filename', default='backup.pdf', help='filename to write to', required=False)
 	parser.add_argument('-f', dest='inputFilename', metavar='filename', help='read the specified file, otherwise stdin', required=False)
@@ -133,7 +135,6 @@ def main() -> None:
 	parser.add_argument('-b', dest='blocksize', choices=range(50, 1501, 50), metavar='{50-1500}', type=int, default=1500, help='use a custom block size between 50 bytes and (the default) 1500 bytes', required=False)
 	arguments = parser.parse_args(argv)
 
-	argv = sys.argv[1:]
 	_ps = None
 
 	if (arguments.interactiveRestore):
