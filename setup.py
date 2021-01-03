@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 	long_description = fh.read()
 
 setuptools.setup(
-	name="paperstorage", # Replace with your own username
+	name="paperstorage",
 	version="0.9.0",
 	author="Florian Eder",
 	author_email="others.meder@gmail.com",
@@ -12,7 +12,7 @@ setuptools.setup(
 	long_description=long_description,
 	long_description_content_type="text/markdown",
 	url="https://github.com/schroeding/paperstorage",
-	packages='paperstorage',
+	packages=setuptools.find_packages(),
 	classifiers=[
 		"Development Status :: 4 - Beta",
 		"Programming Language :: Python :: 3",
