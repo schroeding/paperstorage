@@ -116,7 +116,7 @@ def __interactiveWebcam(_ps: PaperStorage) -> None:
 	__interactiveSave(_ps)
 
 
-def main(argv) -> None:
+def main() -> None:
 	"""Main method to start paperstorage in interactive mode / from the console (python -m paperstorage)
 
 	Do not use if you want to use paperstorage as a module.
@@ -133,6 +133,7 @@ def main(argv) -> None:
 	parser.add_argument('-b', dest='blocksize', choices=range(50, 1501, 50), metavar='{50-1500}', type=int, default=1500, help='use a custom block size between 50 bytes and (the default) 1500 bytes', required=False)
 	arguments = parser.parse_args(argv)
 
+	argv = sys.argv[1:]
 	_ps = None
 
 	if (arguments.interactiveRestore):
@@ -240,4 +241,4 @@ def main(argv) -> None:
 			print(f'Could not write to \'{arguments.outputFilename}\'!')
 
 
-main(sys.argv[1:])
+main()
