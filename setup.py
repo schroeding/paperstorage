@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
 	name="paperstorage",
-	version="0.9.5",
+	version="0.9.7",
 	author="Florian Eder",
 	author_email="others.meder@gmail.com",
 	description="A module to create paper backups for arbitrary data that are recoverable by simple means",

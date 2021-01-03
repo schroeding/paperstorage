@@ -123,7 +123,7 @@ def main() -> None:
 	Takes arguments, returns nothing
 	"""
 	argv = sys.argv[1:]
-	
+
 	parser = argparse.ArgumentParser('paperstorage')
 	parser.add_argument('-o', dest='outputFilename', metavar='filename', default='backup.pdf', help='filename to write to', required=False)
 	parser.add_argument('-f', dest='inputFilename', metavar='filename', help='read the specified file, otherwise stdin', required=False)
@@ -242,4 +242,4 @@ def main() -> None:
 			print(f'Could not write to \'{arguments.outputFilename}\'!')
 
 
-main()
+if (__name__ == '__main__'): main()
