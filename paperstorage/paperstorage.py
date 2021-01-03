@@ -631,6 +631,7 @@ class PaperStorage:
 		"""
 		Returns a list with the ids of the missing data blocks
 
+		You can calculate the page number of the page containung the missing data block by adding 2
 		Careful: Works only if the number of blocks is known and set (by reading the meta page first) or if the last page / block has already been read.
 		"""
 		_missingBlocks = []
