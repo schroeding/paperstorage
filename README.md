@@ -3,24 +3,19 @@
 Create paper backups for arbitrary data that are recoverable by simple means, even without this software.
 Can be used as a standalone tool or integrated as a module.
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e2215b5bf74e45d4a7bfb5eff5c41ba3)](https://app.codacy.com/gh/schroeding/paperstorage?utm_source=github.com&utm_medium=referral&utm_content=schroeding/paperstorage&utm_campaign=Badge_Grade) [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/bd3aeab0a9d74e1183e7e5788ff13335)](https://www.codacy.com/gh/schroeding/paperstorage/dashboard?utm_source=github.com&utm_medium=referral&utm_content=schroeding/paperstorage&utm_campaign=Badge_Coverage)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e2215b5bf74e45d4a7bfb5eff5c41ba3)](https://app.codacy.com/gh/schroeding/paperstorage?utm_source=github.com&utm_medium=referral&utm_content=schroeding/paperstorage&utm_campaign=Badge_Grade) [![Codacy Badge](https://app.codacy.com/project/badge/Coverage/bd3aeab0a9d74e1183e7e5788ff13335)](https://www.codacy.com/gh/schroeding/paperstorage/dashboard?utm_source=github.com&utm_medium=referral&utm_content=schroeding/paperstorage&utm_campaign=Badge_Coverage) [![PyPI version](https://badge.fury.io/py/paperstorage.svg)](https://badge.fury.io/py/paperstorage)
 
 You can find a sample PDF as [sample.pdf](https://github.com/schroeding/paperstorage/blob/master/sample.pdf) in this repository.
 
 ## Installation
 
 ```bash
-python -m pip install paperstorage[full]
-```
-
-If you only want to be able to write backups, you can install paperstorage without zbar and pillow:
-```bash
 python -m pip install paperstorage
 ```
 
 If you want to try the webcam restore feature, you also need to install pyGame:
 ```bash
-python -m pip install paperstorage[full] pygame
+python -m pip install paperstorage[full]
 ```
 
 ## Usage

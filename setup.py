@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
 	name="paperstorage",
-	version="0.9.7",
+	version="0.9.8",
 	author="Florian Eder",
 	author_email="others.meder@gmail.com",
 	description="A module to create paper backups for arbitrary data that are recoverable by simple means",
@@ -28,10 +28,10 @@ setuptools.setup(
 		'console_scripts': ['paperstorage=paperstorage.__main__:main'],
 	},
 	install_requires = [
-		"qrcode>=6.1", "reportlab>=3.5", "six>=1.15"
+		"qrcode>=6.1", "reportlab>=3.5", "six>=1.15", "Pillow>=8.1.0", "pyzbar>=0.1.8"
 	],
 	extras_require = {
-		'full':  ["Pillow>=8.1.0", "pygame~=2.0.0", "pyzbar>=0.1.8"],
+		'full':  [ "pygame~=2.0.0" ],
 	},
 	python_requires='>=3.6',
 )
