@@ -1,5 +1,4 @@
 import unittest
-import pathlib
 from paperstorage import PaperStorage
 
 class TestRestoration(unittest.TestCase):
