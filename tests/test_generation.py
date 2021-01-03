@@ -4,10 +4,10 @@ from paperstorage import PaperStorage
 class TestGeneration(unittest.TestCase):
 
 	def setUp(self):
-		self.testDataStr = "Als Gregor Samsa eines Morgens aus unruhigen Träumen erwachte, fand er sich in seinem Bett zu einem ungeheueren Ungeziefer verwandelt. Er lag auf seinem panzerartig harten Rücken und sah, wenn er den Kopf ein wenig hob, seinen gewölbten, braunen, von bogenförmigen Versteifungen geteilten Bauch, auf dessen Höhe sich die Bettdecke, zum gänzlichen Niedergleiten bereit, kaum noch erhalten konnte. Seine vielen, im Vergleich zu seinem sonstigen Umfang kläglich dünnen Beine flimmerten ihm hilflos vor den Augen." * 4
-		self.testDocumentStr = PaperStorage.fromStr(self.testDataStr, size=PaperStorage.A4, blockSize=1000, writeDate=False, writeHostname=False)
-		self.testDocumentStrLetter = PaperStorage.fromStr(self.testDataStr, size=PaperStorage.LETTER)
-		#self.testDocumentFile = PaperStorage.fromFile('random_testfile', size=PaperStorage.A4)
+		self.testDataStr = "Als Gregor Samsa eines Morgens aus unruhigen Träumen erwachte, fand er sich in seinem Bett zu einem ungeheueren Ungeziefer verwandelt. Er lag auf seinem panzerartig harten Rücken und sah, wenn er den Kopf ein wenig hob, seinen gewölbten, braunen, von bogenförmigen Versteifungen geteilten Bauch, auf dessen Höhe sich die Bettdecke, zum gänzlichen Niedergleiten bereit, kaum noch erhalten konnte. Seine vielen, im Vergleich zu seinem sonstigen Umfang kläglich dünnen Beine flimmerten ihm hilflos vor den Augen. " * 10
+		self.testDocumentStr = PaperStorage.fromStr(self.testDataStr, identifier='Unittest String', size=PaperStorage.A4, writeDate=False, writeHostname=False, watermark='Unittest')
+		self.testDocumentBytes = PaperStorage(bytes(self.testDataStr.encode('utf-8')), identifier='Unittest', size=PaperStorage.LETTER, writeDate=False, writeHostname=False, watermark='Unittest')
+		self.testDocumentFile = PaperStorage.fromFile('tests/random_testfile', identifier='Unittest File', size=PaperStorage.A4, writeDate=False, writeHostname=False, watermark='Unittest')
 
 	def testCreation(self):
 		self.assertRaises(TypeError, PaperStorage, data='string') # string
@@ -22,4 +22,12 @@ class TestGeneration(unittest.TestCase):
 		self.assertRaises(TypeError, self.testDocumentStr.savePDF, '') # empty filename
 
 		self.assertEqual(self.testDocumentStr.savePDF('test1.pdf'), True)
-		self.assertEqual(self.testDocumentStrLetter.savePDF('test2.pdf'), True)
+		self.assertEqual(self.testDocumentBytes.savePDF('test2.pdf'), True)
+		self.assertEqual(self.testDocumentFile.savePDF('test3.pdf'), True)
+
+		self.assertEqual(type(self.testDocumentStr.getPDF()), bytes)
+		self.assertEqual(type(self.testDocumentBytes.getPDF()), bytes)
+		self.assertEqual(type(self.testDocumentFile.getPDF()), bytes)
+
+		self.assertEqual(self.testDocumentStr.getData(), self.testDocumentBytes.getData())
+		

@@ -35,6 +35,15 @@ python -m paperstorage --interactiverestore
 ```python
 from paperstorage import PaperStorage
 
+# Create backup from file
+ps = PaperStorage.fromFile('inputfile')
+ps.savePDF('outputfile')
+
+# Create backup from bytes
+ps = PaperStorage(someBytesObject)
+ps.savePDF('outputfile')
+
+# Restore backup from read QR-Codes
 
 ```
 

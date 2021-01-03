@@ -90,7 +90,7 @@ class PaperStorage:
 		self._writeDate = writeDate
 		self._date = str(datetime.date.today())
 
-		if (not (isinstance(watermark, bool) or (watermark is None))): raise TypeError('watermark must be str or None')
+		if (not (isinstance(watermark, str) or (watermark is None))): raise TypeError('watermark must be str or None')
 		self._watermark = watermark
 
 		if (not isinstance(fontname, str)): raise TypeError('fontname must be str')
@@ -206,6 +206,7 @@ class PaperStorage:
 		except (Exception):
 			raise ValueError('cannot open file with given filename')
 		_fileToBytes = bytes(_file.read())
+		_file.close()
 		if (identifier == None): identifier = filename
 		return cls(_fileToBytes, identifier=identifier, blockSize=blockSize, size=size, writeHostname=writeHostname, writeDate=writeDate, watermark=watermark, fontname=fontname, noMetaPage=noMetaPage)
 
@@ -351,7 +352,7 @@ class PaperStorage:
 			self._document.rotate(15)
 			self._document.translate(0, 50)
 			self._document.setFont(self._font, 50)
-			self._document.setFillColorRGB(0, 0, 0, 0.03)
+			self._document.setFillColorRGB(0, 0, 0, 0.07)
 			self._document.drawCentredString((self._width * mm) / 2, (self._height * mm) / 2, self._watermark)
 			self._document.restoreState()
 		self.__renderLine(4 * self._fontsize)
