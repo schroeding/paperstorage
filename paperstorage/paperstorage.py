@@ -267,7 +267,7 @@ class PaperStorage:
 		if (len(blockData) > self._blockSize): self._blockSize = len(blockData)
 		self._blocks[blockID] = blockData
 		return True
-		
+
 
 	def restoreFromQRString(self, qrData: str) -> bool:
 		"""
