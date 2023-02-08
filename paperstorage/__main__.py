@@ -101,6 +101,7 @@ def __interactiveWebcam(_ps: PaperStorage) -> None:
 					_ps.restoreFromQRString(n.data.decode('ascii'))
 					if (i in _ps.getMissingDataBlocks()):
 						print(f'\nQR-Code detected, but this is not page {i + 2}.\nPlease hold page {i + 2} in front of the webcam...')
+						print("If you're sure you're holding the correct page, this may be a bug. Please try other methods of restoring your backup.")
 						continue
 					print(f'\nPage {i + 2} read!')
 					_pageRead = True
