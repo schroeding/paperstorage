@@ -38,6 +38,7 @@ def __interactiveFolder(_ps: PaperStorage) -> None:
 			print(f'\nNo valid QR-Codes found. Try making sure the folder name (\'{_folder}\') is correct.\nOtherwise try rescanning the pages with a higher quality setting and try again.')
 			quit()
 		print(f'\nThe backup could not be restored completly. Page(s) {",".join([str(n+2) for n in _ps.getMissingDataBlocks()])} must be rescanned.')
+		print("It's also possible that paperstorage has difficulties reading non-png images. If you're using a different format, try converting them to png first.")
 		input('Please rescan the listed pages and save them to the same folder as before. Press [Enter] when you are done. ')
 		_ps.restoreFromFolder(_folder)
 	__interactiveSave(_ps)
